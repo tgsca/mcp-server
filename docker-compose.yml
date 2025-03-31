@@ -9,9 +9,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - JIRA_URL=${JIRA_URL}
-      - JIRA_USER=${JIRA_USER}
-      - JIRA_API_TOKEN=${JIRA_API_TOKEN}
+      - MCP_SERVER_NAME=${MCP_SERVER_NAME}
+      - JIRA_BASE_URL=${JIRA_BASE_URL}
+      - JIRA_API_USER=${JIRA_API_USER}
+      - JIRA_API_KEY=${JIRA_API_KEY}
+      - JIRA_BASIC_AUTH_TOKEN=${JIRA_BASIC_AUTH_TOKEN}
+      - ZEPHYR_BASE_URL=${ZEPHYR_BASE_URL}
+      - ZEPHYR_BEARER_TOKEN=${ZEPHYR_BEARER_TOKEN}
     volumes:
       - ./mcp-tg-jira-seminarapp/src:/app/src
     restart: unless-stopped 
