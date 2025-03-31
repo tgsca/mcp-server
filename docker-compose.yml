@@ -1,5 +1,3 @@
-include:
-   - env_file: ./mcp-tg-jira-seminarapp/.env
 services:
   mcp-tg-jira-seminarapp:
     build:
@@ -8,14 +6,8 @@ services:
     container_name: mcp-tg-jira-seminarapp
     ports:
       - "8000:8000"
-    environment:
-      - MCP_SERVER_NAME=${MCP_SERVER_NAME}
-      - JIRA_BASE_URL=${JIRA_BASE_URL}
-      - JIRA_API_USER=${JIRA_API_USER}
-      - JIRA_API_KEY=${JIRA_API_KEY}
-      - JIRA_BASIC_AUTH_TOKEN=${JIRA_BASIC_AUTH_TOKEN}
-      - ZEPHYR_BASE_URL=${ZEPHYR_BASE_URL}
-      - ZEPHYR_BEARER_TOKEN=${ZEPHYR_BEARER_TOKEN}
     volumes:
       - ./mcp-tg-jira-seminarapp/src:/app/src
     restart: unless-stopped 
+    env_file:
+      - ./mcp-tg-jira-seminarapp/.env

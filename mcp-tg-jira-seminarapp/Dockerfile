@@ -7,17 +7,14 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Poetry installieren
-RUN pip install poetry
+# uv installieren
+RUN pip install uv
 
 # Projektabhängigkeiten kopieren
-COPY pyproject.toml poetry.lock* ./
-
-# Poetry konfigurieren, um virtualenv im Projekt zu erstellen
-RUN poetry config virtualenvs.create false
+COPY pyproject.toml requirements.txt* ./
 
 # Abhängigkeiten installieren
-RUN poetry install --no-dev --no-interaction --no-ansi
+RUN uv pip install -r requirements.txt
 
 # Anwendungscode kopieren
 COPY src/ ./src/
@@ -27,4 +24,4 @@ COPY .env ./.env
 EXPOSE 8000
 
 # Anwendung starten
-CMD ["poetry", "run", "python", "src/main.py"] 
+CMD ["python", "src/main.py"] 
