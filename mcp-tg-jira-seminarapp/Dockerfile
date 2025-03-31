@@ -10,15 +10,12 @@ RUN apt-get update && apt-get install -y \
 # uv installieren
 RUN pip install uv
 
-# Projektabhängigkeiten kopieren
-COPY pyproject.toml requirements.txt* ./
-
-# Abhängigkeiten installieren
-RUN uv pip install -r requirements.txt
-
 # Anwendungscode kopieren
 COPY src/ ./src/
 COPY .env ./.env
+
+# Abhängigkeiten installieren
+RUN uv sync
 
 # Port exponieren (falls notwendig)
 EXPOSE 8000
