@@ -11,8 +11,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install uv
 
 # Anwendungscode kopieren
-COPY src/ ./src/
-COPY .env ./.env
+COPY * .
 
 # Abhängigkeiten installieren
 RUN uv sync
