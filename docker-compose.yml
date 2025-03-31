@@ -1,5 +1,5 @@
-version: '3.8'
-
+include:
+   - env_file: ./mcp-tg-jira-seminarapp/.env
 services:
   mcp-tg-jira-seminarapp:
     build:
