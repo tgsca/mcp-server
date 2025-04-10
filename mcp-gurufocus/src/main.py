@@ -1,5 +1,7 @@
 import os
-from typing import Dict, Any
+import json
+from typing import Dict, Any, List, Optional
+from datetime import datetime
 from dotenv import load_dotenv
 import httpx
 from mcp.server.fastmcp import FastMCP
@@ -19,6 +21,7 @@ async def request_data(url: str) -> Dict[str, Any] | None:
 
     return None
 
+""" Request Functions """
 async def request_stock_summary(symbol: str) -> Dict[str, Any] | None:
     url = f"{BASE_URL}/stock/{symbol}/summary"
     return await request_data(url)
@@ -38,6 +41,9 @@ async def request_segment_data(symbol: str, start_date: str) -> Dict[str, Any] |
 async def request_news_headlines(symbol: str) -> Dict[str, Any] | None:
     url = f"{BASE_URL}/stock/news_feed?symbol={symbol}"
     return await request_data(url)
+
+""" Pre-Processing Functions """
+# ...
 
 """ Tools """
 @mcp.tool()

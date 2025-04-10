@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List
 from dotenv import load_dotenv
 import httpx
 from mcp.server.fastmcp import FastMCP
@@ -18,7 +18,7 @@ mcp = FastMCP("tg-jira-seminarapp")
 # JIRA
 # auth = httpx.BasicAuth(JIRA_API_USER, JIRA_API_KEY)
 
-""" Helper Functions """
+""" PROJECTS """
 async def request_projects() -> Dict[str, Any] | None:
     url = f"{JIRA_BASE_URL}/project/search"
     headers = {
@@ -30,6 +30,23 @@ async def request_projects() -> Dict[str, Any] | None:
         return response.json()
     else:
         return None
+
+""" REQUIREMENTS """
+def compact_requirement_dict(response: Dict[str, Any]) -> List[Dict[str, Any]]:
+    issues = []
+    for issue in response.get('issues', []):
+        fields = issue.get('fields', {})
+        compact_issue = {
+            'Key': issue.get('key'),
+            'Summary': fields.get('summary'),
+            'Status': fields.get('status', {}).get('name'),
+            'Priority': fields.get('priority', {}).get('name'),
+            'Issuetype': fields.get('issuetype', {}).get('name'),
+            'ParentId': fields.get('parent', {}).get('id') if fields.get('parent') else None,
+            'Description': fields.get('description')
+        }
+        issues.append(compact_issue)
+    return {"requirements": issues}
 
 async def request_requirements(project_key: str) -> Dict[str, Any] | None:
 
@@ -46,7 +63,10 @@ async def request_requirements(project_key: str) -> Dict[str, Any] | None:
         "fields": [
             "summary",
             "status",
-            "priority"
+            "priority",
+            "issuetype",
+            "parent",
+            "description"
         ],
         "fieldsByKeys": True,
         "jql": f"project = {project_key} AND issuetype IN (Epic, Story)"
@@ -54,10 +74,57 @@ async def request_requirements(project_key: str) -> Dict[str, Any] | None:
 
     response = httpx.post(url, json=payload, headers=headers)
     if response.status_code == 200:
-        return response.json()
+        return compact_requirement_dict(response.json())
     else:
         return None
 
+""" BUGS """
+def compact_bug_dict(response: Dict[str, Any]) -> List[Dict[str, Any]]:
+    issues = []
+    for issue in response.get('issues', []):
+        fields = issue.get('fields', {})
+        compact_issue = {
+            'Key': issue.get('key'),
+            'Summary': fields.get('summary'),
+            'Status': fields.get('status', {}).get('name'),
+            'Priority': fields.get('priority', {}).get('name'),
+            'Description': fields.get('description'),
+            'Epic': fields.get('parent', {}).get('key')
+        }
+        issues.append(compact_issue)
+    return {"bugs": issues}
+
+async def request_bugs(project_key: str) -> Dict[str, Any] | None:
+
+    if not project_key:
+        return None
+
+    url = f"{JIRA_BASE_URL}/search/jql"
+    headers = {
+        'authorization': f"Basic {JIRA_BASIC_AUTH_TOKEN}",
+        'content-type': "application/json"
+    }
+    payload = {
+        "expand": "",
+        "fields": [
+            "summary",
+            "status",
+            "priority",
+            "description",
+            "parent"
+        ],
+        "fieldsByKeys": True,
+        "jql": f"project = {project_key} AND issuetype = Bug"
+    }
+
+    response = httpx.post(url, json=payload, headers=headers)
+    if response.status_code == 200:
+        return compact_bug_dict(response.json())
+    else:
+        return None
+
+
+""" ZEPHYR """
 async def request_zephyr(url: str) -> Dict[str, Any] | None:
     if not url:
         return None
@@ -94,6 +161,19 @@ async def get_requirements(project_key: str) -> Dict[str, Any] | None:
         Dict[str, Any] | None: A dictionary containing requirements or None if the request fails.
     """
     return await request_requirements(project_key)
+
+@mcp.tool()
+async def get_bugs(project_key: str) -> Dict[str, Any] | None:
+    """
+    Get all bugs from JIRA.
+
+    Args:
+        project_key (str): The key of the project to get bugs from.
+
+    Returns:
+        Dict[str, Any] | None: A dictionary containing bugs or None if the request fails.
+    """
+    return await request_bugs(project_key)
 
 @mcp.tool()
 async def get_testcases(project_key: str) -> Dict[str, Any] | None:
