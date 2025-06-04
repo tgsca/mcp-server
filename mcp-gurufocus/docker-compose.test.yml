@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # Main MCP server for testing
+  mcp-server-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MCP_SERVER_MODE=stdio
+      - GURUFOCUS_API_KEY=${TEST_API_KEY:-test_api_key_123}
+    volumes:
+      - ./app:/app/app:ro
+      - ./tests:/app/tests:ro
+    command: ["python", "app/main.py"]
+    stdin_open: true
+    tty: true
+
+  # Unit and integration test runner
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - mcp-server-test
+    environment:
+      - MCP_SERVER_HOST=mcp-server-test
+      - GURUFOCUS_API_KEY=${TEST_API_KEY:-test_api_key_123}
+    volumes:
+      - ./app:/app/app:ro
+      - ./tests:/app/tests:ro
+      - ./pyproject.toml:/app/pyproject.toml:ro
+      - ./htmlcov:/app/htmlcov
+      - ./coverage.xml:/app/coverage.xml
+    command: ["uv", "run", "--group", "test", "pytest", "tests/", "-v", "--tb=short"]
+
+  # Integration test runner (separate for better isolation)
+  integration-test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - GURUFOCUS_API_KEY=${TEST_API_KEY:-test_api_key_123}
+    volumes:
+      - ./app:/app/app:ro
+      - ./tests:/app/tests:ro
+      - ./pyproject.toml:/app/pyproject.toml:ro
+    command: ["uv", "run", "--group", "test", "pytest", "tests/integration/", "-v", "--tb=short"]
+
+  # E2E test runner (isolated environment)
+  e2e-test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - GURUFOCUS_API_KEY=${TEST_API_KEY:-test_api_key_123}
+    volumes:
+      - ./app:/app/app:ro
+      - ./tests:/app/tests:ro
+      - ./pyproject.toml:/app/pyproject.toml:ro
+    command: ["uv", "run", "--group", "test", "pytest", "tests/e2e/", "-v", "--tb=short", "-s"]
+
+  # Coverage analysis
+  coverage-analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - GURUFOCUS_API_KEY=${TEST_API_KEY:-test_api_key_123}
+    volumes:
+      - ./app:/app/app:ro
+      - ./tests:/app/tests:ro
+      - ./pyproject.toml:/app/pyproject.toml:ro
+      - ./htmlcov:/app/htmlcov
+      - ./coverage.xml:/app/coverage.xml
+    command: [
+      "uv", "run", "--group", "test", "pytest", 
+      "tests/unit/", "tests/integration/",
+      "--cov=app", "--cov-report=html", "--cov-report=xml", "--cov-report=term-missing"
+    ]
+
+  # Linting and code quality
+  code-quality:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./app:/app/app:ro
+      - ./tests:/app/tests:ro
+      - ./pyproject.toml:/app/pyproject.toml:ro
+    command: ["sh", "-c", "ruff check . && ruff format --check ."]
+
+networks:
+  default:
+    name: mcp-test-network

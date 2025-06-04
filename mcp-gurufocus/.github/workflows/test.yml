@@ -1,0 +1,320 @@
+name: Comprehensive Testing
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+  workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'Test level to run'
+        required: false
+        default: 'standard'
+        type: choice
+        options:
+        - standard
+        - comprehensive
+        - coverage-only
+
+env:
+  PYTHON_VERSION: '3.12'
+  UV_VERSION: 'latest'
+
+jobs:
+  # Code Quality and Linting
+  code-quality:
+    runs-on: ubuntu-latest
+    name: 🔍 Code Quality
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+        
+      - name: Install dependencies
+        run: uv sync
+        
+      - name: Run ruff linting
+        run: uv run ruff check .
+        
+      - name: Run ruff formatting check
+        run: uv run ruff format --check .
+
+  # Unit Tests
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: 🔬 Unit Tests
+    needs: code-quality
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+        
+      - name: Install dependencies
+        run: uv sync --group test
+        
+      - name: Run unit tests
+        run: uv run --group test pytest tests/unit/ -v --tb=short
+        env:
+          GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
+
+  # Integration Tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: 🔗 Integration Tests
+    needs: unit-tests
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+        
+      - name: Install dependencies
+        run: uv sync --group test
+        
+      - name: Run integration tests
+        run: uv run --group test pytest tests/integration/ -v --tb=short
+        env:
+          GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
+          
+      - name: Run MCP tool unit tests
+        run: uv run --group test pytest tests/unit/test_mcp_tools.py -v --tb=short
+        env:
+          GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
+
+  # End-to-End Tests (Optional - may fail without real API)
+  e2e-tests:
+    runs-on: ubuntu-latest
+    name: 🎯 End-to-End Tests
+    needs: integration-tests
+    continue-on-error: true  # Don't fail pipeline if E2E tests fail
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+        
+      - name: Install dependencies
+        run: uv sync --group test
+        
+      - name: Run end-to-end tests
+        run: uv run --group test pytest tests/e2e/ -v --tb=short -x
+        env:
+          GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
+        continue-on-error: true
+
+  # Coverage Analysis
+  coverage:
+    runs-on: ubuntu-latest
+    name: 📊 Coverage Analysis
+    needs: integration-tests
+    if: github.event.inputs.test_level != 'coverage-only' || github.event_name != 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+        
+      - name: Install dependencies
+        run: uv sync --group test
+        
+      - name: Run tests with coverage
+        run: |
+          uv run --group test pytest tests/unit/ tests/integration/ \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-report=html
+        env:
+          GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
+          
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            htmlcov/
+            coverage.xml
+          retention-days: 7
+
+  # Comprehensive Testing (Docker-based)
+  comprehensive-tests:
+    runs-on: ubuntu-latest
+    name: 🚀 Comprehensive Tests
+    needs: code-quality
+    if: github.event.inputs.test_level == 'comprehensive' || github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build test images
+        run: docker-compose -f docker-compose.test.yml build
+        
+      - name: Run comprehensive test suite
+        run: |
+          chmod +x scripts/test-docker.sh
+          ./scripts/test-docker.sh all
+        env:
+          TEST_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
+          
+      - name: Upload Docker test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-test-results
+          path: |
+            htmlcov/
+            coverage.xml
+          retention-days: 7
+
+  # Security Scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    name: 🛡️ Security Scan
+    needs: code-quality
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+        
+      - name: Install dependencies
+        run: uv sync
+        
+      - name: Run safety check
+        run: |
+          uv add --group dev safety
+          uv run --group dev safety check
+        continue-on-error: true
+        
+      - name: Run bandit security scan
+        run: |
+          uv add --group dev bandit
+          uv run --group dev bandit -r app/ -f json -o bandit-report.json
+        continue-on-error: true
+        
+      - name: Upload security artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+          retention-days: 7
+
+  # Performance Tests (Optional)
+  performance-tests:
+    runs-on: ubuntu-latest
+    name: ⚡ Performance Tests
+    needs: integration-tests
+    if: github.event.inputs.test_level == 'comprehensive'
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+        
+      - name: Install dependencies
+        run: |
+          uv sync --group test
+          uv add --group test pytest-benchmark
+          
+      - name: Run performance benchmarks
+        run: |
+          uv run --group test pytest tests/unit/test_mcp_tools.py::TestMCPToolFunctions::test_concurrent_tool_execution \
+            --benchmark-only --benchmark-json=benchmark.json
+        env:
+          GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
+        continue-on-error: true
+        
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-benchmarks
+          path: benchmark.json
+          retention-days: 7
+
+  # Test Summary
+  test-summary:
+    runs-on: ubuntu-latest
+    name: 📋 Test Summary
+    needs: [unit-tests, integration-tests, coverage]
+    if: always()
+    
+    steps:
+      - name: Test Summary
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Type | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.code-quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Coverage Analysis | ${{ needs.coverage.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Tests | ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || needs.e2e-tests.result == 'skipped' && '⏭️ Skipped' || '⚠️ Failed (Non-blocking)' }} |" >> $GITHUB_STEP_SUMMARY

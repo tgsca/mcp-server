@@ -4,7 +4,7 @@ API-Client für die GuruFocus API.
 
 from typing import Dict, Any, Optional, Union
 import httpx
-from config import BASE_URL
+from ..config import BASE_URL
 
 class GuruFocusClient:
     """Client für die GuruFocus API."""

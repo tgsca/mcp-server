@@ -2,7 +2,7 @@
 Prozessor für Finanzdaten von GuruFocus.
 """
 
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Dict, Any, List
 
 class FinancialsProcessor:
     """Verarbeitet detaillierte Finanzdaten von Unternehmen aus der GuruFocus API."""

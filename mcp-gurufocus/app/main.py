@@ -2,17 +2,21 @@
 Hauptanwendung für die Finanz-API.
 """
 
+import os
 from typing import Dict, Any, List
 import asyncio
 from datetime import datetime
+from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
-from api.client import GuruFocusClient
-from processors.stock_processor import StockProcessor
-from processors.financials_processor import FinancialsProcessor
-from processors.analyst_processor import AnalystProcessor
-from processors.segments_processor import SegmentsProcessor
-from processors.news_processor import NewsProcessor
-from processors.report_generator import ReportGenerator
+from app.api.client import GuruFocusClient
+from app.processors.stock_processor import StockProcessor
+from app.processors.financials_processor import FinancialsProcessor
+from app.processors.analyst_processor import AnalystProcessor
+from app.processors.segments_processor import SegmentsProcessor
+from app.processors.news_processor import NewsProcessor
+from app.processors.report_generator import ReportGenerator
+
+load_dotenv()
 
 # MCP-Server erstellen
 mcp = FastMCP("financials")
@@ -299,4 +303,4 @@ async def process_and_generate_report(symbol: str, start_date: str = "201901") -
         }
 
 if __name__ == "__main__":
-    mcp.run(transport='stdio')
+    mcp.run(transport=os.getenv("MCP_SERVER_MODE", "stdio"))
