@@ -1,10 +1,16 @@
-name: Comprehensive Testing
+name: MCP GuruFocus - Comprehensive Testing
 
 on:
   push:
     branches: [ master, main, develop ]
+    paths:
+      - 'mcp-gurufocus/**'
+      - '.github/workflows/mcp-gurufocus-test.yml'
   pull_request:
     branches: [ master, main, develop ]
+    paths:
+      - 'mcp-gurufocus/**'
+      - '.github/workflows/mcp-gurufocus-test.yml'
   workflow_dispatch:
     inputs:
       test_level:
@@ -20,6 +26,7 @@ on:
 env:
   PYTHON_VERSION: '3.12'
   UV_VERSION: 'latest'
+  WORKING_DIRECTORY: './mcp-gurufocus'
 
 jobs:
   # Code Quality and Linting
@@ -41,12 +48,15 @@ jobs:
         
       - name: Install dependencies
         run: uv sync
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         
       - name: Run ruff linting
         run: uv run ruff check .
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         
       - name: Run ruff formatting check
         run: uv run ruff format --check .
+        working-directory: ${{ env.WORKING_DIRECTORY }}
 
   # Unit Tests
   unit-tests:
@@ -68,9 +78,11 @@ jobs:
         
       - name: Install dependencies
         run: uv sync --group test
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         
       - name: Run unit tests
         run: uv run --group test pytest tests/unit/ -v --tb=short
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         env:
           GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
 
@@ -94,14 +106,17 @@ jobs:
         
       - name: Install dependencies
         run: uv sync --group test
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         
       - name: Run integration tests
         run: uv run --group test pytest tests/integration/ -v --tb=short
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         env:
           GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
           
       - name: Run MCP tool unit tests
         run: uv run --group test pytest tests/unit/test_mcp_tools.py -v --tb=short
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         env:
           GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
 
@@ -126,9 +141,11 @@ jobs:
         
       - name: Install dependencies
         run: uv sync --group test
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         
       - name: Run end-to-end tests
         run: uv run --group test pytest tests/e2e/ -v --tb=short -x
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         env:
           GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
         continue-on-error: true
@@ -154,6 +171,7 @@ jobs:
         
       - name: Install dependencies
         run: uv sync --group test
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         
       - name: Run tests with coverage
         run: |
@@ -162,24 +180,25 @@ jobs:
             --cov-report=term-missing \
             --cov-report=xml \
             --cov-report=html
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         env:
           GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
           
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          file: ./coverage.xml
+          file: ./mcp-gurufocus/coverage.xml
           flags: unittests
-          name: codecov-umbrella
+          name: mcp-gurufocus-codecov
           fail_ci_if_error: false
           
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: mcp-gurufocus-coverage-report
           path: |
-            htmlcov/
-            coverage.xml
+            mcp-gurufocus/htmlcov/
+            mcp-gurufocus/coverage.xml
           retention-days: 7
 
   # Comprehensive Testing (Docker-based)
@@ -198,11 +217,13 @@ jobs:
         
       - name: Build test images
         run: docker-compose -f docker-compose.test.yml build
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         
       - name: Run comprehensive test suite
         run: |
           chmod +x scripts/test-docker.sh
           ./scripts/test-docker.sh all
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
           
@@ -210,10 +231,10 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: docker-test-results
+          name: mcp-gurufocus-docker-test-results
           path: |
-            htmlcov/
-            coverage.xml
+            mcp-gurufocus/htmlcov/
+            mcp-gurufocus/coverage.xml
           retention-days: 7
 
   # Security Scanning
@@ -236,26 +257,29 @@ jobs:
         
       - name: Install dependencies
         run: uv sync
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         
       - name: Run safety check
         run: |
           uv add --group dev safety
           uv run --group dev safety check
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         continue-on-error: true
         
       - name: Run bandit security scan
         run: |
           uv add --group dev bandit
           uv run --group dev bandit -r app/ -f json -o bandit-report.json
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         continue-on-error: true
         
       - name: Upload security artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: security-reports
+          name: mcp-gurufocus-security-reports
           path: |
-            bandit-report.json
+            mcp-gurufocus/bandit-report.json
           retention-days: 7
 
   # Performance Tests (Optional)
@@ -282,11 +306,13 @@ jobs:
         run: |
           uv sync --group test
           uv add --group test pytest-benchmark
+        working-directory: ${{ env.WORKING_DIRECTORY }}
           
       - name: Run performance benchmarks
         run: |
           uv run --group test pytest tests/unit/test_mcp_tools.py::TestMCPToolFunctions::test_concurrent_tool_execution \
             --benchmark-only --benchmark-json=benchmark.json
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         env:
           GURUFOCUS_API_KEY: ${{ secrets.TEST_API_KEY || 'test_api_key_123' }}
         continue-on-error: true
@@ -295,8 +321,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: performance-benchmarks
-          path: benchmark.json
+          name: mcp-gurufocus-performance-benchmarks
+          path: mcp-gurufocus/benchmark.json
           retention-days: 7
 
   # Test Summary
@@ -309,7 +335,7 @@ jobs:
     steps:
       - name: Test Summary
         run: |
-          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## MCP GuruFocus Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Test Type | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
