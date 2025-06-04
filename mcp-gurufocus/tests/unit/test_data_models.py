@@ -18,11 +18,11 @@ class TestStockSummary:
             "currency": "$",
             "sector": "Technology",
             "industry": "Consumer Electronics",
-            "country": "USA"
+            "country": "USA",
         }
-        
+
         stock = StockSummary(**data)
-        
+
         assert stock.company == "Apple Inc"
         assert stock.price == 150.25
         assert stock.currency == "$"
@@ -37,11 +37,11 @@ class TestStockSummary:
             "price": 150.25,
             "sector": "Technology",
             "industry": "Consumer Electronics",
-            "country": "USA"
+            "country": "USA",
         }
-        
+
         stock = StockSummary(**data)
-        
+
         assert stock.currency == "$"  # Default value
 
     def test_stock_summary_missing_required_field(self):
@@ -50,13 +50,13 @@ class TestStockSummary:
             "price": 150.25,
             "sector": "Technology",
             "industry": "Consumer Electronics",
-            "country": "USA"
+            "country": "USA",
             # Missing required 'company' field
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             StockSummary(**data)
-        
+
         assert "company" in str(exc_info.value)
 
     def test_stock_summary_invalid_price_type(self):
@@ -66,12 +66,12 @@ class TestStockSummary:
             "price": "invalid_price",  # Should be float
             "sector": "Technology",
             "industry": "Consumer Electronics",
-            "country": "USA"
+            "country": "USA",
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             StockSummary(**data)
-        
+
         assert "price" in str(exc_info.value)
 
     def test_stock_summary_negative_price(self):
@@ -81,9 +81,9 @@ class TestStockSummary:
             "price": -150.25,
             "sector": "Technology",
             "industry": "Consumer Electronics",
-            "country": "USA"
+            "country": "USA",
         }
-        
+
         # Should accept negative price (could be valid in some contexts)
         stock = StockSummary(**data)
         assert stock.price == -150.25
@@ -97,25 +97,21 @@ class TestAnalystEstimate:
         data = {
             "revenue": [100000000000, 110000000000, 120000000000],
             "eps": [5.0, 5.5, 6.0],
-            "dates": ["2024", "2025", "2026"]
+            "dates": ["2024", "2025", "2026"],
         }
-        
+
         estimate = AnalystEstimate(**data)
-        
+
         assert estimate.revenue == [100000000000, 110000000000, 120000000000]
         assert estimate.eps == [5.0, 5.5, 6.0]
         assert estimate.dates == ["2024", "2025", "2026"]
 
     def test_analyst_estimate_empty_lists(self):
         """Test AnalystEstimate with empty lists."""
-        data = {
-            "revenue": [],
-            "eps": [],
-            "dates": []
-        }
-        
+        data = {"revenue": [], "eps": [], "dates": []}
+
         estimate = AnalystEstimate(**data)
-        
+
         assert estimate.revenue == []
         assert estimate.eps == []
         assert estimate.dates == []
@@ -124,13 +120,13 @@ class TestAnalystEstimate:
         """Test AnalystEstimate with missing required field."""
         data = {
             "eps": [5.0, 5.5, 6.0],
-            "dates": ["2024", "2025", "2026"]
+            "dates": ["2024", "2025", "2026"],
             # Missing required 'revenue' field
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             AnalystEstimate(**data)
-        
+
         assert "revenue" in str(exc_info.value)
 
     def test_analyst_estimate_invalid_list_type(self):
@@ -138,12 +134,12 @@ class TestAnalystEstimate:
         data = {
             "revenue": "not_a_list",  # Should be list
             "eps": [5.0, 5.5, 6.0],
-            "dates": ["2024", "2025", "2026"]
+            "dates": ["2024", "2025", "2026"],
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             AnalystEstimate(**data)
-        
+
         assert "revenue" in str(exc_info.value)
 
     def test_analyst_estimate_mixed_numeric_types(self):
@@ -151,11 +147,11 @@ class TestAnalystEstimate:
         data = {
             "revenue": [100000000000, 110000000000.5, 120],  # Mix of int and float
             "eps": [5, 5.5, 6.0],  # Mix of int and float
-            "dates": ["2024", "2025", "2026"]
+            "dates": ["2024", "2025", "2026"],
         }
-        
+
         estimate = AnalystEstimate(**data)
-        
+
         assert estimate.revenue[0] == 100000000000
         assert estimate.revenue[1] == 110000000000.5
         assert estimate.eps[0] == 5
@@ -169,12 +165,11 @@ class TestSegmentData:
         """Test basic SegmentData model creation."""
         # Since SegmentData is incomplete in the source file,
         # we test that it can be imported without errors
-        from app.models.data_models import SegmentData
-        
+
         # This tests that the model class exists and can be imported
         assert SegmentData is not None
-        assert hasattr(SegmentData, '__name__')
-        assert SegmentData.__name__ == 'SegmentData'
+        assert hasattr(SegmentData, "__name__")
+        assert SegmentData.__name__ == "SegmentData"
 
 
 class TestModelValidation:
@@ -186,14 +181,14 @@ class TestModelValidation:
         stock_fields = StockSummary.model_fields
         assert "company" in stock_fields
         company_field = stock_fields["company"]
-        assert hasattr(company_field, 'description')
+        assert hasattr(company_field, "description")
         assert "Der Name des Unternehmens" in company_field.description
-        
+
         # Test AnalystEstimate field descriptions
         estimate_fields = AnalystEstimate.model_fields
         assert "revenue" in estimate_fields
         revenue_field = estimate_fields["revenue"]
-        assert hasattr(revenue_field, 'description')
+        assert hasattr(revenue_field, "description")
         assert "Umsatzprognosen" in revenue_field.description
 
     def test_model_defaults(self):
@@ -210,12 +205,12 @@ class TestModelValidation:
             "price": 150.25,
             "sector": "Technology",
             "industry": "Consumer Electronics",
-            "country": "USA"
+            "country": "USA",
         }
-        
+
         stock = StockSummary(**stock_data)
         serialized = stock.model_dump()
-        
+
         assert serialized["company"] == "Apple Inc"
         assert serialized["price"] == 150.25
         assert serialized["currency"] == "$"
@@ -228,12 +223,12 @@ class TestModelValidation:
             "price": 150.25,
             "sector": "Technology",
             "industry": "Consumer Electronics",
-            "country": "USA"
+            "country": "USA",
         }
-        
+
         stock = StockSummary(**stock_data)
         json_str = stock.model_dump_json()
-        
+
         assert isinstance(json_str, str)
         assert "Apple Inc" in json_str
         assert "150.25" in json_str
@@ -242,9 +237,9 @@ class TestModelValidation:
     def test_model_from_json(self):
         """Test model creation from JSON."""
         json_data = '{"company": "Apple Inc", "price": 150.25, "sector": "Technology", "industry": "Consumer Electronics", "country": "USA"}'
-        
+
         stock = StockSummary.model_validate_json(json_data)
-        
+
         assert stock.company == "Apple Inc"
         assert stock.price == 150.25
         assert stock.sector == "Technology"

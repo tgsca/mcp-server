@@ -28,6 +28,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Creating New MCP Servers
 - `./new_mcp_server.sh <server-name>` - Bootstrap new MCP server with standard structure
 
+### Continuous Integration
+- **GitHub Actions**: Automated workflows located in `.github/workflows/`
+- **mcp-gurufocus**: Comprehensive testing pipeline with code quality, unit/integration/e2e tests, coverage analysis, security scanning
+- **Path-based triggering**: Workflows only run when relevant service files change
+- **Quality Gates**: All code must pass ruff linting and formatting checks before tests run
+
 ## Architecture Overview
 
 This is a **multi-service MCP (Model Context Protocol) server** repository containing independent microservices that provide structured API access through MCP tools.

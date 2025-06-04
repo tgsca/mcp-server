@@ -4,4 +4,4 @@
 API-Client-Subpaket für den Zugriff auf GuruFocus.
 """
 
-from .client import GuruFocusClient
+from .client import GuruFocusClient as GuruFocusClient

@@ -4,9 +4,9 @@
 Prozessoren für die Verarbeitung von Finanzdaten.
 """
 
-from .stock_processor import StockProcessor
-from .financials_processor import FinancialsProcessor
-from .analyst_processor import AnalystProcessor
-from .segments_processor import SegmentsProcessor
-from .news_processor import NewsProcessor
-from .report_generator import ReportGenerator
+from .stock_processor import StockProcessor as StockProcessor
+from .financials_processor import FinancialsProcessor as FinancialsProcessor
+from .analyst_processor import AnalystProcessor as AnalystProcessor
+from .segments_processor import SegmentsProcessor as SegmentsProcessor
+from .news_processor import NewsProcessor as NewsProcessor
+from .report_generator import ReportGenerator as ReportGenerator

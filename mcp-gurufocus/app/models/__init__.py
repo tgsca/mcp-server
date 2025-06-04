@@ -4,4 +4,9 @@
 Datenmodelle für die Finanz-API.
 """
 
-from .data_models import StockSummary, AnalystEstimate, SegmentData, NewsHeadline
+from .data_models import (
+    StockSummary as StockSummary,
+    AnalystEstimate as AnalystEstimate,
+    SegmentData as SegmentData,
+    NewsHeadline as NewsHeadline,
+)

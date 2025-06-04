@@ -29,7 +29,8 @@ Tools für den Zugriff auf die Finanz-API.
 # Rohdaten-Tools
 #
 
-#@mcp.tool()
+
+# @mcp.tool()
 async def get_stock_summary(symbol: str) -> Dict[str, Any] | None:
     """
     Get basic stock information for a given symbol.
@@ -42,7 +43,8 @@ async def get_stock_summary(symbol: str) -> Dict[str, Any] | None:
     """
     return await GuruFocusClient.get_stock_summary(symbol)
 
-#@mcp.tool()
+
+# @mcp.tool()
 async def get_stock_financials(symbol: str) -> Dict[str, Any] | None:
     """
     Get financial data.
@@ -54,7 +56,7 @@ async def get_stock_financials(symbol: str) -> Dict[str, Any] | None:
     - per share data
     - general ratios
     - valuation ratios
-    - valuation and quality 
+    - valuation and quality
 
     Args:
         symbol (str): The stock symbol to get information for. US stocks with the format "AAPL", other stocks with the format "XTRA:DHL.DE"
@@ -64,7 +66,8 @@ async def get_stock_financials(symbol: str) -> Dict[str, Any] | None:
     """
     return await GuruFocusClient.get_stock_financials(symbol)
 
-#@mcp.tool()
+
+# @mcp.tool()
 async def get_analyst_estimates(symbol: str) -> Dict[str, Any] | None:
     """
     Get estmiate for divers figures for the next 3 years.
@@ -75,7 +78,7 @@ async def get_analyst_estimates(symbol: str) -> Dict[str, Any] | None:
     - net income
     - eps
     - dividend
-    - etc. 
+    - etc.
 
     Args:
         symbol (str): The stock symbol to get information for. US stocks with the format "AAPL", other stocks with the format "XTRA:DHL.DE"
@@ -85,7 +88,8 @@ async def get_analyst_estimates(symbol: str) -> Dict[str, Any] | None:
     """
     return await GuruFocusClient.get_analyst_estimates(symbol)
 
-#@mcp.tool()
+
+# @mcp.tool()
 async def get_segments_data(symbol: str, start_date: str) -> Dict[str, Any] | None:
     """
     Get segment data for a given symbol.
@@ -100,7 +104,8 @@ async def get_segments_data(symbol: str, start_date: str) -> Dict[str, Any] | No
     """
     return await GuruFocusClient.get_segments_data(symbol, start_date)
 
-#@mcp.tool()
+
+# @mcp.tool()
 async def get_news_headlines(symbol: str) -> Dict[str, Any] | None:
     """
     Get the news headlines for a given symbol.
@@ -113,9 +118,11 @@ async def get_news_headlines(symbol: str) -> Dict[str, Any] | None:
     """
     return await GuruFocusClient.get_news_headlines(symbol)
 
+
 #
 # Verarbeitete Daten-Tools
 #
+
 
 @mcp.tool()
 async def get_concise_stock_summary(symbol: str) -> Dict[str, Any]:
@@ -130,15 +137,18 @@ async def get_concise_stock_summary(symbol: str) -> Dict[str, Any]:
     """
     # Rohdaten abrufen
     raw_data = await GuruFocusClient.get_stock_summary(symbol)
-    
+
     # Daten verarbeiten
     if raw_data:
         return StockProcessor.process_stock_summary(raw_data)
     else:
         return {"error": f"Konnte keine Daten für {symbol} abrufen"}
 
+
 @mcp.tool()
-async def get_concise_stock_financials(symbol: str, target_currency: str = "USD") -> Dict[str, Any]:
+async def get_concise_stock_financials(
+    symbol: str, target_currency: str = "USD"
+) -> Dict[str, Any]:
     """
     Get concise, processed financial data for a given symbol.
 
@@ -151,7 +161,7 @@ async def get_concise_stock_financials(symbol: str, target_currency: str = "USD"
     try:
         # Rohdaten abrufen
         raw_data = await GuruFocusClient.get_stock_financials(symbol, target_currency)
-        
+
         # Daten verarbeiten
         if raw_data:
             # Wenn wir gültige Daten haben, verarbeiten wir sie
@@ -161,17 +171,26 @@ async def get_concise_stock_financials(symbol: str, target_currency: str = "USD"
             return {
                 "is_reit": False,
                 "jahresabschlüsse": {
-                    "bilanz": {"jährlich": {"perioden": [], "daten": {}}, "quartal": {"perioden": [], "daten": {}}},
-                    "gewinn_verlust": {"jährlich": {"perioden": [], "daten": {}}, "quartal": {"perioden": [], "daten": {}}},
-                    "cashflow": {"jährlich": {"perioden": [], "daten": {}}, "quartal": {"perioden": [], "daten": {}}}
+                    "bilanz": {
+                        "jährlich": {"perioden": [], "daten": {}},
+                        "quartal": {"perioden": [], "daten": {}},
+                    },
+                    "gewinn_verlust": {
+                        "jährlich": {"perioden": [], "daten": {}},
+                        "quartal": {"perioden": [], "daten": {}},
+                    },
+                    "cashflow": {
+                        "jährlich": {"perioden": [], "daten": {}},
+                        "quartal": {"perioden": [], "daten": {}},
+                    },
                 },
                 "kennzahlen": {
                     "pro_aktie": {"perioden": [], "daten": {}},
                     "allgemein": {"perioden": [], "daten": {}},
-                    "bewertung": {"perioden": [], "daten": {}}
+                    "bewertung": {"perioden": [], "daten": {}},
                 },
                 "qualität": {},
-                "hinweis": f"Keine Finanzdaten für {symbol} verfügbar. Der API-Request hat keine Daten zurückgegeben oder ist fehlgeschlagen."
+                "hinweis": f"Keine Finanzdaten für {symbol} verfügbar. Der API-Request hat keine Daten zurückgegeben oder ist fehlgeschlagen.",
             }
     except Exception as e:
         # Bei unerwarteten Fehlern geben wir eine passende Fehlermeldung zurück
@@ -180,8 +199,9 @@ async def get_concise_stock_financials(symbol: str, target_currency: str = "USD"
             "is_reit": False,
             "jahresabschlüsse": {},
             "kennzahlen": {},
-            "qualität": {}
+            "qualität": {},
         }
+
 
 @mcp.tool()
 async def get_concise_analyst_estimates(symbol: str) -> Dict[str, Any]:
@@ -196,15 +216,18 @@ async def get_concise_analyst_estimates(symbol: str) -> Dict[str, Any]:
     """
     # Rohdaten abrufen
     raw_data = await GuruFocusClient.get_analyst_estimates(symbol)
-    
+
     # Daten verarbeiten
     if raw_data:
         return AnalystProcessor.process_analyst_estimates(raw_data)
     else:
         return {"error": f"Konnte keine Analystenschätzungen für {symbol} abrufen"}
 
+
 @mcp.tool()
-async def get_concise_segments_data(symbol: str, start_date: str = "201901") -> Dict[str, Any]:
+async def get_concise_segments_data(
+    symbol: str, start_date: str = "201901"
+) -> Dict[str, Any]:
     """
     Get concise, processed segment data for a given symbol.
 
@@ -217,12 +240,13 @@ async def get_concise_segments_data(symbol: str, start_date: str = "201901") -> 
     """
     # Rohdaten abrufen
     raw_data = await GuruFocusClient.get_segments_data(symbol, start_date)
-    
+
     # Daten verarbeiten
     if raw_data:
         return SegmentsProcessor.process_segments_data(raw_data)
     else:
         return {"error": f"Konnte keine Segmentdaten für {symbol} abrufen"}
+
 
 @mcp.tool()
 async def get_concise_news_headlines(symbol: str) -> List[Dict[str, str]]:
@@ -238,15 +262,20 @@ async def get_concise_news_headlines(symbol: str) -> List[Dict[str, str]]:
     try:
         # Rohdaten abrufen
         raw_data = await GuruFocusClient.get_news_headlines(symbol)
-        
+
         # Daten verarbeiten - wir verwenden die verbesserte Methode,
         # die mit verschiedenen Eingabeformaten umgehen kann
         return NewsProcessor.process_news_headlines(raw_data)
     except Exception as e:
-        return [{"error": f"Fehler beim Abrufen der Nachrichten für {symbol}: {str(e)}"}]
+        return [
+            {"error": f"Fehler beim Abrufen der Nachrichten für {symbol}: {str(e)}"}
+        ]
 
-#@mcp.tool()
-async def process_and_generate_report(symbol: str, start_date: str = "201901") -> Dict[str, Any]:
+
+# @mcp.tool()
+async def process_and_generate_report(
+    symbol: str, start_date: str = "201901"
+) -> Dict[str, Any]:
     """
     Get, process, and generate a comprehensive report for a stock.
 
@@ -263,35 +292,49 @@ async def process_and_generate_report(symbol: str, start_date: str = "201901") -
             GuruFocusClient.get_stock_summary(symbol),
             GuruFocusClient.get_analyst_estimates(symbol),
             GuruFocusClient.get_segments_data(symbol, start_date),
-            GuruFocusClient.get_news_headlines(symbol)
+            GuruFocusClient.get_news_headlines(symbol),
         ]
-        
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # Ergebnisse extrahieren und prüfen
         summary_data, estimates_data, segments_data, news_data = results
-        
+
         # Prüfen, ob eine der Anfragen eine Exception zurückgegeben hat
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 print(f"Fehler bei API-Anfrage {i}: {result}")
                 results[i] = None
-        
+
         # Daten verarbeiten, wobei wir sicherstellen, dass keine None-Werte an die Prozessoren weitergegeben werden
-        processed_summary = StockProcessor.process_stock_summary(summary_data) if summary_data else {"error": "Keine Summary-Daten verfügbar"}
-        processed_estimates = AnalystProcessor.process_analyst_estimates(estimates_data) if estimates_data else {"error": "Keine Estimates-Daten verfügbar"}
-        processed_segments = SegmentsProcessor.process_segments_data(segments_data) if segments_data else {"error": "Keine Segment-Daten verfügbar"}
-        processed_news = NewsProcessor.process_news_headlines(news_data)  # Diese Methode kann mit None-Werten umgehen
-        
+        processed_summary = (
+            StockProcessor.process_stock_summary(summary_data)
+            if summary_data
+            else {"error": "Keine Summary-Daten verfügbar"}
+        )
+        processed_estimates = (
+            AnalystProcessor.process_analyst_estimates(estimates_data)
+            if estimates_data
+            else {"error": "Keine Estimates-Daten verfügbar"}
+        )
+        processed_segments = (
+            SegmentsProcessor.process_segments_data(segments_data)
+            if segments_data
+            else {"error": "Keine Segment-Daten verfügbar"}
+        )
+        processed_news = NewsProcessor.process_news_headlines(
+            news_data
+        )  # Diese Methode kann mit None-Werten umgehen
+
         # Bericht erstellen
         report = ReportGenerator.generate_summary_report(
             processed_summary,
             processed_estimates,
             processed_segments,
             processed_news,
-            symbol
+            symbol,
         )
-        
+
         return report
     except Exception as e:
         # Fehlerbehandlung
@@ -299,8 +342,9 @@ async def process_and_generate_report(symbol: str, start_date: str = "201901") -
             "error": f"Fehler bei der Erstellung des Berichts für {symbol}: {str(e)}",
             "symbol": symbol,
             "erstellt_am": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "status": "fehlgeschlagen"
+            "status": "fehlgeschlagen",
         }
+
 
 if __name__ == "__main__":
     mcp.run(transport=os.getenv("MCP_SERVER_MODE", "stdio"))

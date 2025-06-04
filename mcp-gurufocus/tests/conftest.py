@@ -21,15 +21,15 @@ def mock_stock_summary_response():
                 "group": "Hardware",
                 "subindustry": "Consumer Electronics",
                 "country": "USA",
-                "risk_assessment": "Medium"
+                "risk_assessment": "Medium",
             },
             "ratio": {
                 "P/E(ttm)": {"value": 25.5},
                 "Forward P/E": {"value": 22.1},
                 "P/S": {"value": 7.2},
                 "P/B": {"value": 8.9},
-                "Operating margin (%)": {"value": 30.1}
-            }
+                "Operating margin (%)": {"value": 30.1},
+            },
         }
     }
 
@@ -42,12 +42,12 @@ def mock_financials_response():
         "annual": {
             "Fiscal Year": ["2023-09", "2022-09", "2021-09"],
             "Revenue": [394328000000, 365817000000, 274515000000],
-            "Net Income": [97001000000, 99803000000, 94680000000]
+            "Net Income": [97001000000, 99803000000, 94680000000],
         },
         "quarterly": {
             "Fiscal Year": ["2024-03", "2023-12", "2023-09"],
-            "Revenue": [90753000000, 119575000000, 89498000000]
-        }
+            "Revenue": [90753000000, 119575000000, 89498000000],
+        },
     }
 
 
@@ -64,14 +64,26 @@ def mock_analyst_estimates_response():
             "roe_estimate": [28.5, 30.2, 32.1],
             "gross_margin_estimate": [42.5, 43.1, 43.8],
             "future_revenue_estimate_growth": 8.5,
-            "future_eps_estimate_growth": 12.2
+            "future_eps_estimate_growth": 12.2,
         },
         "quarterly": {
             "date": ["2024-Q1", "2024-Q2", "2024-Q3", "2024-Q4", "2025-Q1"],
-            "revenue_estimate": [95000000000, 98000000000, 92000000000, 100000000000, 102000000000],
-            "net_income_estimate": [23000000000, 24500000000, 22000000000, 25500000000, 26000000000],
-            "per_share_eps_estimate": [1.48, 1.58, 1.42, 1.65, 1.68]
-        }
+            "revenue_estimate": [
+                95000000000,
+                98000000000,
+                92000000000,
+                100000000000,
+                102000000000,
+            ],
+            "net_income_estimate": [
+                23000000000,
+                24500000000,
+                22000000000,
+                25500000000,
+                26000000000,
+            ],
+            "per_share_eps_estimate": [1.48, 1.58, 1.42, 1.65, 1.68],
+        },
     }
 
 
@@ -87,16 +99,16 @@ def mock_segments_response():
                     "Services": 85200000000,
                     "Mac": 29357000000,
                     "iPad": 28300000000,
-                    "Wearables": 39845000000
+                    "Wearables": 39845000000,
                 },
                 {
-                    "date": "2022", 
+                    "date": "2022",
                     "iPhone": 205489000000,
                     "Services": 78129000000,
                     "Mac": 40177000000,
                     "iPad": 29292000000,
-                    "Wearables": 41241000000
-                }
+                    "Wearables": 41241000000,
+                },
             ],
             "ttm": [
                 {
@@ -105,9 +117,9 @@ def mock_segments_response():
                     "Services": 85500000000,
                     "Mac": 24943000000,
                     "iPad": 24814000000,
-                    "Wearables": 37467000000
+                    "Wearables": 37467000000,
                 }
-            ]
+            ],
         },
         "geographic": {
             "annual": [
@@ -117,7 +129,7 @@ def mock_segments_response():
                     "Europe": 94294000000,
                     "Greater China": 72559000000,
                     "Japan": 24257000000,
-                    "Rest of Asia Pacific": 29615000000
+                    "Rest of Asia Pacific": 29615000000,
                 },
                 {
                     "date": "2022",
@@ -125,10 +137,10 @@ def mock_segments_response():
                     "Europe": 95118000000,
                     "Greater China": 74200000000,
                     "Japan": 25977000000,
-                    "Rest of Asia Pacific": 29375000000
-                }
+                    "Rest of Asia Pacific": 29375000000,
+                },
             ]
-        }
+        },
     }
 
 
@@ -140,13 +152,13 @@ def mock_news_response():
             {
                 "title": "Apple Reports Strong Q4 Results",
                 "date": "2024-01-15",
-                "url": "https://example.com/news1"
+                "url": "https://example.com/news1",
             },
             {
                 "title": "New iPhone Sales Exceed Expectations",
                 "date": "2024-01-14",
-                "url": "https://example.com/news2"
-            }
+                "url": "https://example.com/news2",
+            },
         ]
     }
 

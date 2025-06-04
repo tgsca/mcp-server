@@ -4,4 +4,4 @@
 Finanz-API-Paket für den Zugriff auf GuruFocus-Daten.
 """
 
-from .config import BASE_URL
+from .config import BASE_URL as BASE_URL
