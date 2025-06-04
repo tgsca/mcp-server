@@ -26,7 +26,7 @@ on:
 env:
   PYTHON_VERSION: '3.12'
   UV_VERSION: 'latest'
-  WORKING_DIRECTORY: './mcp-gurufocus'
+  WORKING_DIRECTORY: 'mcp-gurufocus'
 
 jobs:
   # Code Quality and Linting
@@ -221,6 +221,9 @@ jobs:
         
       - name: Run comprehensive test suite
         run: |
+          pwd
+          ls -la
+          ls -la scripts/
           chmod +x scripts/test-docker.sh
           ./scripts/test-docker.sh all
         working-directory: ${{ env.WORKING_DIRECTORY }}
