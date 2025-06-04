@@ -259,9 +259,9 @@ jobs:
         run: uv sync
         working-directory: ${{ env.WORKING_DIRECTORY }}
         
-      - name: Run safety check
+      - name: Run safety scan
         run: |
-          uv add --group dev safety
+          uv add --group dev "safety<3.0.0"
           uv run --group dev safety check
         working-directory: ${{ env.WORKING_DIRECTORY }}
         continue-on-error: true

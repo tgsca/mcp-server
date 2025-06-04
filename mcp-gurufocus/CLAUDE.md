@@ -37,6 +37,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `./scripts/test-docker.sh build` - Build Docker test images
 - `./scripts/test-docker.sh clean` - Clean up Docker resources
 
+### Security Scanning
+- `uv run --group dev safety check` - Scan dependencies for known vulnerabilities
+- `uv run --group dev bandit -r app/` - Static security analysis of Python code
+
 ### Running the Application
 - `uv run python app/main.py` - Run the MCP server
 - Set `MCP_SERVER_MODE=stdio` environment variable for stdio transport
