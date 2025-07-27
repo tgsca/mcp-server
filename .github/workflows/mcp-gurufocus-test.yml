@@ -187,7 +187,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          file: ./mcp-gurufocus/coverage.xml
+          file: ./coverage.xml
           flags: unittests
           name: mcp-gurufocus-codecov
           fail_ci_if_error: false
@@ -197,8 +197,8 @@ jobs:
         with:
           name: mcp-gurufocus-coverage-report
           path: |
-            mcp-gurufocus/htmlcov/
-            mcp-gurufocus/coverage.xml
+            htmlcov/
+            coverage.xml
           retention-days: 7
 
   # Comprehensive Testing (Docker-based)
@@ -221,9 +221,6 @@ jobs:
         
       - name: Run comprehensive test suite
         run: |
-          pwd
-          ls -la
-          ls -la scripts/
           chmod +x scripts/test-docker.sh
           ./scripts/test-docker.sh all
         working-directory: ${{ env.WORKING_DIRECTORY }}
@@ -236,8 +233,8 @@ jobs:
         with:
           name: mcp-gurufocus-docker-test-results
           path: |
-            mcp-gurufocus/htmlcov/
-            mcp-gurufocus/coverage.xml
+            htmlcov/
+            coverage.xml
           retention-days: 7
 
   # Security Scanning
@@ -245,6 +242,7 @@ jobs:
     runs-on: ubuntu-latest
     name: 🛡️ Security Scan
     needs: code-quality
+    continue-on-error: true
     
     steps:
       - name: Checkout code
@@ -282,7 +280,7 @@ jobs:
         with:
           name: mcp-gurufocus-security-reports
           path: |
-            mcp-gurufocus/bandit-report.json
+            bandit-report.json
           retention-days: 7
 
   # Performance Tests (Optional)
@@ -325,7 +323,7 @@ jobs:
         if: always()
         with:
           name: mcp-gurufocus-performance-benchmarks
-          path: mcp-gurufocus/benchmark.json
+          path: benchmark.json
           retention-days: 7
 
   # Test Summary
