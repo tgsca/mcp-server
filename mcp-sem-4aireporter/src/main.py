@@ -23,59 +23,47 @@ mcp = FastMCP("mcp-sem-4aireporter")
 
 async def request_jira(url: str, payload: Dict[str, Any]) -> Dict[str, Any] | None:
     """Make authenticated request to JIRA API"""
-    # Debug: Check if environment variables are loaded
+    # Check if environment variables are loaded
     if not JIRA_BASE_URL or not JIRA_BASIC_AUTH_TOKEN:
-        print(f"DEBUG: Missing JIRA credentials - BASE_URL: {JIRA_BASE_URL}, TOKEN: {'***' if JIRA_BASIC_AUTH_TOKEN else None}")
         return None
-    
+
     headers = {
         "authorization": f"Basic {JIRA_BASIC_AUTH_TOKEN}",
         "content-type": "application/json",
     }
 
     try:
-        print(f"DEBUG: Making JIRA request to {url}")
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=payload, headers=headers)
-            print(f"DEBUG: JIRA response status: {response.status_code}")
             if response.status_code == 200:
                 result = response.json()
-                print(f"DEBUG: JIRA response items count: {len(result.get('issues', []))}")
                 return result
             else:
-                print(f"DEBUG: JIRA error response: {response.text}")
                 return None
-    except Exception as e:
-        print(f"DEBUG: JIRA exception: {e}")
+    except Exception:
         return None
 
 
 async def request_zephyr(url: str) -> Dict[str, Any] | None:
     """Make authenticated request to Zephyr API"""
-    # Debug: Check if environment variables are loaded
+    # Check if environment variables are loaded
     if not ZEPHYR_BASE_URL or not ZEPHYR_BEARER_TOKEN:
-        print(f"DEBUG: Missing Zephyr credentials - BASE_URL: {ZEPHYR_BASE_URL}, TOKEN: {'***' if ZEPHYR_BEARER_TOKEN else None}")
         return None
-    
+
     headers = {
         "authorization": f"Bearer {ZEPHYR_BEARER_TOKEN}",
         "content-type": "application/json",
     }
 
     try:
-        print(f"DEBUG: Making Zephyr request to {url}")
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers)
-            print(f"DEBUG: Zephyr response status: {response.status_code}")
             if response.status_code == 200:
                 result = response.json()
-                print(f"DEBUG: Zephyr response items count: {len(result.get('values', []))}")
                 return result
             else:
-                print(f"DEBUG: Zephyr error response: {response.text}")
                 return None
-    except Exception as e:
-        print(f"DEBUG: Zephyr exception: {e}")
+    except Exception:
         return None
 
 
@@ -174,15 +162,29 @@ def calculate_business_value(issue: Dict[str, Any]) -> int:
 
 def map_zephyr_execution_status(zephyr_status: str) -> str:
     """Map Zephyr execution status to standard"""
+    if not zephyr_status or not isinstance(zephyr_status, str):
+        return "NOT_EXECUTED"
+
+    # Handle both direct values and nested objects
+    status_str = str(zephyr_status).upper().strip()
+
     mapping = {
         "PASS": "PASS",
+        "PASSED": "PASS",
         "FAIL": "FAIL",
+        "FAILED": "FAIL",
         "WIP": "NOT_EXECUTED",
+        "IN_PROGRESS": "NOT_EXECUTED",
         "BLOCKED": "BLOCKED",
         "NOT_EXECUTED": "NOT_EXECUTED",
         "UNEXECUTED": "NOT_EXECUTED",
+        "NOT_RUN": "NOT_EXECUTED",
+        "SKIP": "SKIP",
+        "SKIPPED": "SKIP",
     }
-    return mapping.get(zephyr_status.upper(), "NOT_EXECUTED")
+
+    result = mapping.get(status_str, "NOT_EXECUTED")
+    return result
 
 
 async def fetch_requirements(project_id: str) -> Dict[str, Any]:
@@ -214,41 +216,90 @@ async def fetch_requirements(project_id: str) -> Dict[str, Any]:
     items = []
     for issue in response.get("issues", []):
         fields = issue.get("fields", {})
+        
+        # Direct field mapping from JIRA API
         created_date = fields.get("created", datetime.now().isoformat() + "Z")
         updated_date = fields.get("updated", datetime.now().isoformat() + "Z")
-        priority = fields.get("priority", {}).get("name", "MEDIUM")
-        standard_priority = map_jira_priority_to_standard(priority)
+        
+        # Map actual JIRA priority names to standard format (same as bugs)
+        priority_name = fields.get("priority", {}).get("name", "")
+        priority_mapping = {
+            "4-Sehr hoch": "CRITICAL",
+            "3-Eher hoch": "HIGH", 
+            "2-Mittel": "MEDIUM",
+            "1-Niedrig": "LOW",
+            "0-Sehr niedrig": "LOW"
+        }
+        standard_priority = priority_mapping.get(priority_name, "MEDIUM")
 
-        # Safely extract description
-        description = fields.get("description") or ""
-        if not isinstance(description, str):
-            description = str(description) if description else ""
+        # Extract description from complex JSON structure
+        description_raw = fields.get("description")
+        description = ""
+        if description_raw and isinstance(description_raw, dict):
+            # Extract text from Atlassian Document Format (ADF)
+            def extract_text_from_adf(content):
+                text_parts = []
+                if isinstance(content, dict):
+                    if content.get("type") == "text":
+                        text_parts.append(content.get("text", ""))
+                    elif "content" in content:
+                        for item in content["content"]:
+                            text_parts.extend(extract_text_from_adf(item))
+                elif isinstance(content, list):
+                    for item in content:
+                        text_parts.extend(extract_text_from_adf(item))
+                return text_parts
+            
+            text_parts = extract_text_from_adf(description_raw)
+            description = " ".join(text_parts).strip()
+        else:
+            description = str(description_raw) if description_raw else ""
+
+        # Direct field mapping
+        status_name = fields.get("status", {}).get("name", "")
+        issue_type_name = fields.get("issuetype", {}).get("name", "")
+        parent_key = fields.get("parent", {}).get("key") if fields.get("parent") else None
+        story_points = fields.get("customfield_10016")
+        labels = fields.get("labels", [])
+        
+        # Map status names to standard format
+        status_mapping = {
+            "Backlog": "TODO",
+            "Selected for Development": "TODO", 
+            "In Arbeit": "IN_PROGRESS",
+            "In Progress": "IN_PROGRESS",
+            "Done": "DONE",
+            "Closed": "CLOSED"
+        }
+        mapped_status = status_mapping.get(status_name, "OPEN")
+        
+        # Map issue type to requirement type
+        requirement_type_mapping = {
+            "Epic": "BUSINESS",
+            "Story": "FUNCTIONAL"
+        }
+        requirement_type = requirement_type_mapping.get(issue_type_name, "FUNCTIONAL")
         
         item = {
             "id": issue.get("key", ""),
             "title": fields.get("summary", ""),
             "description": description,
-            "status": map_jira_status_to_standard(
-                fields.get("status", {}).get("name", "OPEN")
-            ),
+            "status": mapped_status,
             "priority": standard_priority,
             "created_date": created_date,
             "updated_date": updated_date,
             "source_url": f"{JIRA_BASE_URL.replace('/rest/api/3', '')}/browse/{issue.get('key', '')}",
-            "tags": fields.get("labels", []),
+            "tags": labels,
             "custom_fields": {},
-            "requirement_type": map_issue_type_to_requirement_type(
-                fields.get("issuetype", {}).get("name", "")
-            ),
-            "acceptance_criteria": extract_acceptance_criteria(description),
-            "story_points": fields.get("customfield_10016"),
-            "epic_id": fields.get("parent", {}).get("key")
-            if fields.get("parent")
-            else None,
+            "requirement_type": requirement_type,
+            "acceptance_criteria": [],  # Could extract from description if needed
+            "story_points": story_points,
+            "epic_id": parent_key,
             "linked_test_cases": [],
-            "business_value": calculate_business_value(issue),
-            "risk_level": map_priority_to_risk_level(standard_priority),
+            "business_value": 50,  # Default value, could calculate based on priority
+            "risk_level": standard_priority,  # Same as priority for simplicity
         }
+
         items.append(item)
 
     return create_response("requirements", project_id, items)
@@ -264,40 +315,53 @@ async def fetch_test_cases(project_id: str) -> Dict[str, Any]:
 
     items = []
     for test_case in response.get("values", []):
+        # Direct field mapping from Zephyr API
         created_date = test_case.get("createdOn", datetime.now().isoformat() + "Z")
-        updated_date = test_case.get("modifiedOn", datetime.now().isoformat() + "Z")
-
-        # Extract test steps and expected results
-        test_steps = []
-        expected_results = []
-        if test_case.get("testScript", {}).get("steps"):
-            for step in test_case["testScript"]["steps"]:
-                test_steps.append(step.get("description", ""))
-                expected_results.append(step.get("expectedResult", ""))
+        updated_date = created_date  # Zephyr doesn't seem to have modifiedOn in this response
+        
+        # Map status ID to status name (based on common Zephyr status IDs)
+        status_id = test_case.get("status", {}).get("id")
+        status_mapping = {
+            9156759: "ACTIVE",  # Active/Approved status
+            9156758: "DRAFT",   # Draft status
+            9156757: "INACTIVE" # Deprecated status
+        }
+        mapped_status = status_mapping.get(status_id, "DRAFT")
+        
+        # Map priority ID to priority name (based on common Zephyr priority IDs)  
+        priority_id = test_case.get("priority", {}).get("id")
+        priority_mapping = {
+            9156760: "MEDIUM",   # Medium priority
+            9156761: "HIGH",     # High priority
+            9156762: "CRITICAL", # Critical priority
+            9156763: "LOW"       # Low priority
+        }
+        mapped_priority = priority_mapping.get(priority_id, "MEDIUM")
+        
+        # Extract component and owner
+        component_name = test_case.get("component", {}).get("name") if test_case.get("component") else None
+        owner_id = test_case.get("owner", {}).get("accountId") if test_case.get("owner") else None
 
         item = {
             "id": test_case.get("key", ""),
             "title": test_case.get("name", ""),
             "description": test_case.get("objective", ""),
-            "status": "ACTIVE" if test_case.get("status") == "Approved" else "DRAFT",
-            "priority": test_case.get("priority", "MEDIUM"),
+            "status": mapped_status,
+            "priority": mapped_priority,
             "created_date": created_date,
             "updated_date": updated_date,
             "source_url": f"{ZEPHYR_BASE_URL.replace('/v2', '')}/testcase/{test_case.get('key', '')}",
-            "tags": [],
-            "custom_fields": {},
-            "test_type": "AUTOMATED" if test_case.get("automated") else "MANUAL",
-            "automation_status": "AUTOMATED"
-            if test_case.get("automated")
-            else "NOT_AUTOMATED",
-            "requirement_id": None,  # Would need to extract from links
-            "test_steps": test_steps,
-            "expected_results": expected_results,
+            "tags": test_case.get("labels", []),
+            "custom_fields": test_case.get("customFields", {}),
+            "test_type": "MANUAL",  # Default to manual, no automated field in API response
+            "automation_status": "NOT_AUTOMATED",
+            "requirement_id": None,  # Could extract from links.issues if needed
+            "test_steps": [],  # Would need separate API call to testScript.self
+            "expected_results": [],  # Would need separate API call
             "environment": "TESTING",
-            "component": test_case.get("component", {}).get("name")
-            if test_case.get("component")
-            else None,
+            "component": component_name,
         }
+
         items.append(item)
 
     return create_response("test_cases", project_id, items)
@@ -311,41 +375,60 @@ async def fetch_test_executions(project_id: str) -> Dict[str, Any]:
     if not response:
         return create_empty_response("test_executions", project_id)
 
+
     items = []
     for execution in response.get("values", []):
-        executed_date = execution.get("executedOn", datetime.now().isoformat() + "Z")
-        test_case = execution.get("testCase", {})
-        execution_status = execution.get("executionStatus", {}).get(
-            "name", "NOT_EXECUTED"
-        )
+        # Direct field mapping from Zephyr API
+        executed_date = execution.get("actualEndDate") or datetime.now().isoformat() + "Z"
+        
+        # Extract test case key from self URL (e.g., "SEM-T1" from the URL)
+        test_case_key = ""
+        if execution.get("testCase", {}).get("self"):
+            test_case_url = execution["testCase"]["self"]
+            # Extract key like "SEM-T1" from URL
+            if "/testcases/" in test_case_url:
+                test_case_key = test_case_url.split("/testcases/")[1].split("/")[0]
+        
+        # Map status ID to status name (corrected for German Zephyr instance)
+        status_id = execution.get("testExecutionStatus", {}).get("id")
+        status_mapping = {
+            9156746: "NOT_EXECUTED",  # 55 executions - "nicht ausgeführt"
+            9156747: "IN_PROGRESS",   # 1 execution - "im Test"  
+            9156748: "PASS",          # 8 executions - "Erfolgreich" ✅
+            9156749: "FAIL",          # 3 executions - "Fehlgeschlagen"
+            9156750: "BLOCKED",       # 5 executions - "Blockiert" ✅
+        }
+        execution_status = status_mapping.get(status_id, "NOT_EXECUTED")
+        
+        # Direct field mapping
+        executed_by_id = execution.get("executedById") or ""
+        environment = execution.get("environment") or "TESTING"
+        comment = execution.get("comment")
+        execution_time_seconds = execution.get("executionTime")
+        test_cycle_id = execution.get("testCycle", {}).get("id")
 
         item = {
-            "id": f"{test_case.get('key', '')}-{execution.get('id', '')}",
-            "title": f"Execution of {test_case.get('name', '')}",
-            "description": f"Test execution for {test_case.get('name', '')}",
+            "id": f"{test_case_key}-{execution.get('id', '')}",
+            "title": f"Execution of {test_case_key}",
+            "description": f"Test execution for {test_case_key}",
             "status": "COMPLETED",
             "priority": "MEDIUM",
             "created_date": executed_date,
             "updated_date": executed_date,
-            "source_url": f"{ZEPHYR_BASE_URL.replace('/v2', '')}/execution/{execution.get('id', '')}",
+            "source_url": f"{ZEPHYR_BASE_URL.replace('/v2', '')}/testexecutions/{execution.get('id', '')}",
             "tags": [],
             "custom_fields": {},
-            "test_case_id": test_case.get("key", ""),
-            "execution_status": map_zephyr_execution_status(execution_status),
-            "executed_by": execution.get("executedBy", {}).get("displayName", ""),
+            "test_case_id": test_case_key,
+            "execution_status": execution_status,
+            "executed_by": executed_by_id,
             "execution_time": executed_date,
-            "duration_seconds": None,
-            "environment": execution.get("environment", {}).get("name", "TESTING")
-            if execution.get("environment")
-            else "TESTING",
-            "build_version": execution.get("testCycle", {}).get("build")
-            if execution.get("testCycle")
-            else None,
-            "failure_reason": execution.get("comment")
-            if execution_status == "FAIL"
-            else None,
+            "duration_seconds": execution_time_seconds,
+            "environment": environment,
+            "build_version": str(test_cycle_id) if test_cycle_id else None,
+            "failure_reason": comment,
             "attachments": [],
         }
+
         items.append(item)
 
     return create_response("test_executions", project_id, items)
@@ -381,44 +464,75 @@ async def fetch_bugs(project_id: str) -> Dict[str, Any]:
     items = []
     for issue in response.get("issues", []):
         fields = issue.get("fields", {})
+        
+        # Direct field mapping from JIRA API
         created_date = fields.get("created", datetime.now().isoformat() + "Z")
         updated_date = fields.get("updated", datetime.now().isoformat() + "Z")
-        priority = fields.get("priority", {}).get("name", "MEDIUM")
-        standard_priority = map_jira_priority_to_standard(priority)
+        
+        # Map actual JIRA priority names to standard format
+        priority_name = fields.get("priority", {}).get("name", "")
+        priority_mapping = {
+            "4-Sehr hoch": "CRITICAL",
+            "3-Eher hoch": "HIGH", 
+            "2-Mittel": "MEDIUM",
+            "1-Niedrig": "LOW",
+            "0-Sehr niedrig": "LOW"
+        }
+        standard_priority = priority_mapping.get(priority_name, "MEDIUM")
 
-        # Safely extract description
+        # Direct description mapping
         description = fields.get("description") or ""
         if not isinstance(description, str):
             description = str(description) if description else ""
+
+        # Direct field mapping - simplified
+        environment = fields.get("environment") or "PRODUCTION"
+        labels = fields.get("labels", [])
+        components = fields.get("components", [])
+        resolution = fields.get("resolution", {}).get("name") if fields.get("resolution") else None
+        status_name = fields.get("status", {}).get("name", "OPEN")
+        parent_key = fields.get("parent", {}).get("key") if fields.get("parent") else None
+
+        # Map status name to standard format
+        status_mapping = {
+            "Backlog": "TODO",
+            "Selected for Development": "TODO", 
+            "In Arbeit": "IN_PROGRESS",
+            "In Progress": "IN_PROGRESS",
+            "Done": "DONE",
+            "Closed": "CLOSED",
+            "Open": "OPEN"
+        }
+        mapped_status = status_mapping.get(status_name, "OPEN")
         
+        # Extract component name
+        component_name = None
+        if components and len(components) > 0:
+            component_name = components[0].get("name") if isinstance(components[0], dict) else None
+
         item = {
             "id": issue.get("key", ""),
             "title": fields.get("summary", ""),
             "description": description,
-            "status": map_jira_status_to_standard(
-                fields.get("status", {}).get("name", "OPEN")
-            ),
+            "status": mapped_status,
             "priority": standard_priority,
             "created_date": created_date,
             "updated_date": updated_date,
             "source_url": f"{JIRA_BASE_URL.replace('/rest/api/3', '')}/browse/{issue.get('key', '')}",
-            "tags": fields.get("labels", []),
+            "tags": labels,
             "custom_fields": {},
-            "bug_type": "FUNCTIONAL",  # Default, could be enhanced based on labels/custom fields
-            "severity": map_priority_to_severity(standard_priority),
-            "environment": "PRODUCTION",  # Default, could be extracted from environment field
-            "component": fields.get("components", [{}])[0].get("name")
-            if fields.get("components")
-            else None,
-            "reproduction_steps": [],  # Could be extracted from description
+            "bug_type": "FUNCTIONAL",  # Default type
+            "severity": standard_priority,  # Same as priority for simplicity
+            "environment": environment,
+            "component": component_name,
+            "reproduction_steps": [],  # Could extract from description if needed
             "expected_behavior": None,
             "actual_behavior": None,
-            "resolution": fields.get("resolution", {}).get("name")
-            if fields.get("resolution")
-            else None,
+            "resolution": resolution,
             "found_in_version": None,
             "fixed_in_version": None,
         }
+
         items.append(item)
 
     return create_response("bugs", project_id, items)
@@ -468,13 +582,10 @@ async def get_requirements(project_id: str = PROJECT_ID) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Requirements data following MCP spec format
     """
-    print(f"DEBUG: get_requirements called with project_id: {project_id}")
     try:
         result = await fetch_requirements(project_id)
-        print(f"DEBUG: get_requirements returning {len(result.get('items', []))} items")
         return result
     except Exception as e:
-        print(f"DEBUG: get_requirements exception: {e}")
         raise
 
 
@@ -505,6 +616,63 @@ async def get_bugs(project_id: str = PROJECT_ID) -> Dict[str, Any]:
     """
     return await fetch_bugs(project_id)
 
+
+
+
+@mcp.tool()
+async def get_test_execution_stats(project_id: str = PROJECT_ID) -> Dict[str, Any]:
+    """
+    Get test execution status statistics to debug mapping.
+    
+    Args:
+        project_id (str): The project ID to analyze
+        
+    Returns:
+        Dict[str, Any]: Statistics about execution statuses
+    """
+    url = f"{ZEPHYR_BASE_URL}/testexecutions?projectKey={project_id}&maxResults=100"
+    response = await request_zephyr(url)
+    
+    if not response:
+        return {"error": "No response from Zephyr API"}
+    
+    stats = {
+        "total_executions": len(response.get("values", [])),
+        "status_id_counts": {},
+        "mapped_status_counts": {},
+        "raw_status_samples": []
+    }
+    
+    # Status mapping (corrected for German Zephyr instance)
+    status_mapping = {
+        9156746: "NOT_EXECUTED",  # 55 executions - "nicht ausgeführt"
+        9156747: "IN_PROGRESS",   # 1 execution - "im Test"  
+        9156748: "PASS",          # 8 executions - "Erfolgreich"
+        9156749: "FAIL",          # 3 executions - "Fehlgeschlagen"
+        9156750: "BLOCKED",       # 5 executions - "Blockiert"
+    }
+    
+    for execution in response.get("values", []):
+        status_id = execution.get("testExecutionStatus", {}).get("id")
+        mapped_status = status_mapping.get(status_id, "NOT_EXECUTED")
+        
+        # Count status IDs
+        stats["status_id_counts"][str(status_id)] = stats["status_id_counts"].get(str(status_id), 0) + 1
+        
+        # Count mapped statuses
+        stats["mapped_status_counts"][mapped_status] = stats["mapped_status_counts"].get(mapped_status, 0) + 1
+        
+        # Sample raw data (first 3)
+        if len(stats["raw_status_samples"]) < 3:
+            stats["raw_status_samples"].append({
+                "test_case": execution.get("testCase", {}).get("self", "").split("/")[-2] if execution.get("testCase", {}).get("self") else "unknown",
+                "status_id": status_id,
+                "mapped_status": mapped_status,
+                "executed_date": execution.get("actualEndDate"),
+                "executed_by": execution.get("executedById")
+            })
+    
+    return stats
 
 @mcp.tool()
 async def get_test_executions(project_id: str = PROJECT_ID) -> Dict[str, Any]:
