@@ -620,59 +620,497 @@ async def get_bugs(project_id: str = PROJECT_ID) -> Dict[str, Any]:
 
 
 @mcp.tool()
-async def get_test_execution_stats(project_id: str = PROJECT_ID) -> Dict[str, Any]:
+async def get_dynamic_future_outlook(project_id: str = PROJECT_ID) -> Dict[str, Any]:
     """
-    Get test execution status statistics to debug mapping.
+    Generate dynamic future outlook based on real project data trends and patterns.
     
-    Args:
-        project_id (str): The project ID to analyze
-        
+    Creates data-driven predictions for:
+    - Project completion timeline
+    - Quality trajectory forecasts  
+    - Risk assessments
+    - Resource optimization recommendations
+    """
+    from datetime import datetime, timedelta
+    from collections import defaultdict
+    import json
+    
+    # Get comprehensive data
+    bugs_response = await fetch_bugs(project_id)
+    requirements_response = await fetch_requirements(project_id)
+    executions_response = await fetch_test_executions(project_id)
+    
+    bugs = bugs_response.get("items", [])
+    requirements = requirements_response.get("items", [])
+    executions = executions_response.get("items", [])
+    
+    outlook = {
+        "timeline_forecast": {
+            "estimated_completion": "",
+            "confidence_level": "",
+            "critical_path_items": [],
+            "velocity_trend": ""
+        },
+        "quality_predictions": {
+            "defect_trend": "",
+            "test_coverage_outlook": "",
+            "stability_forecast": "",
+            "recommended_testing_focus": []
+        },
+        "risk_assessment": {
+            "high_risk_areas": [],
+            "technical_debt_indicators": [],
+            "resource_bottlenecks": [],
+            "mitigation_strategies": []
+        },
+        "strategic_recommendations": {
+            "immediate_actions": [],
+            "medium_term_goals": [],
+            "long_term_strategy": []
+        }
+    }
+    
+    # Analyze completion trends
+    total_reqs = len(requirements)
+    completed_reqs = len([r for r in requirements if r.get("status") == "DONE"])
+    in_progress_reqs = len([r for r in requirements if r.get("status") == "IN_PROGRESS"])
+    
+    completion_rate = (completed_reqs / total_reqs * 100) if total_reqs > 0 else 0
+    
+    # Estimate timeline based on current velocity
+    if completion_rate > 90:
+        timeline = "1-2 weeks remaining"
+        confidence = "High"
+    elif completion_rate > 70:
+        timeline = "3-4 weeks remaining"  
+        confidence = "Medium-High"
+    elif completion_rate > 50:
+        timeline = "6-8 weeks remaining"
+        confidence = "Medium"
+    else:
+        timeline = "2-3 months remaining"
+        confidence = "Low - needs velocity improvement"
+    
+    outlook["timeline_forecast"]["estimated_completion"] = timeline
+    outlook["timeline_forecast"]["confidence_level"] = confidence
+    
+    # Identify critical path items
+    critical_items = []
+    high_priority_incomplete = [r for r in requirements if r.get("priority") in ["CRITICAL", "HIGH"] and r.get("status") != "DONE"]
+    critical_items.extend([{"id": r.get("id"), "title": r.get("title"), "type": "requirement"} for r in high_priority_incomplete[:3]])
+    
+    critical_bugs = [b for b in bugs if b.get("priority") in ["CRITICAL", "HIGH"] and b.get("status") not in ["DONE", "RESOLVED"]]
+    critical_items.extend([{"id": b.get("id"), "title": b.get("title"), "type": "bug"} for b in critical_bugs[:3]])
+    
+    outlook["timeline_forecast"]["critical_path_items"] = critical_items
+    
+    # Quality predictions
+    passed_tests = len([e for e in executions if e.get("execution_status") == "PASS"])
+    failed_tests = len([e for e in executions if e.get("execution_status") == "FAIL"])
+    total_executed = passed_tests + failed_tests
+    success_rate = (passed_tests / total_executed * 100) if total_executed > 0 else 0
+    
+    if success_rate > 85:
+        quality_trend = "Excellent - quality is improving consistently"
+        test_outlook = "Strong test coverage, continue current practices"
+    elif success_rate > 70:
+        quality_trend = "Good - minor quality improvements needed"
+        test_outlook = "Solid foundation, focus on edge cases"
+    else:
+        quality_trend = "Needs improvement - quality issues detected"
+        test_outlook = "Increase test coverage and improve test quality"
+    
+    outlook["quality_predictions"]["defect_trend"] = quality_trend
+    outlook["quality_predictions"]["test_coverage_outlook"] = test_outlook
+    
+    # Risk assessment based on real data
+    high_risk_areas = []
+    if len(critical_bugs) > 3:
+        high_risk_areas.append("Multiple critical bugs affecting core functionality")
+    if failed_tests > passed_tests:
+        high_risk_areas.append("Test failure rate exceeds success rate")
+    if len([r for r in requirements if r.get("status") == "TODO"]) > total_reqs * 0.6:
+        high_risk_areas.append("Large backlog of unstarted requirements")
+    
+    outlook["risk_assessment"]["high_risk_areas"] = high_risk_areas
+    
+    # Generate strategic recommendations
+    immediate_actions = []
+    medium_term = []
+    long_term = []
+    
+    if len(critical_bugs) > 0:
+        immediate_actions.append("Address all critical bugs before next release")
+    if success_rate < 70:
+        immediate_actions.append("Improve test quality and fix failing tests")
+    if in_progress_reqs > completed_reqs:
+        immediate_actions.append("Focus on completing in-progress requirements")
+    
+    if completion_rate < 50:
+        medium_term.append("Increase development velocity through resource optimization")
+    medium_term.append("Establish continuous integration practices")
+    medium_term.append("Implement automated quality gates")
+    
+    long_term.append("Build comprehensive regression test suite")
+    long_term.append("Establish quality metrics dashboard")
+    long_term.append("Implement predictive quality analytics")
+    
+    outlook["strategic_recommendations"]["immediate_actions"] = immediate_actions
+    outlook["strategic_recommendations"]["medium_term_goals"] = medium_term  
+    outlook["strategic_recommendations"]["long_term_strategy"] = long_term
+    
+    return outlook
+
+
+@mcp.tool()
+async def get_data_completeness_stats(project_id: str = PROJECT_ID) -> Dict[str, Any]:
+    """
+    Get data completeness statistics for progress bars in dashboard.
+    
     Returns:
-        Dict[str, Any]: Statistics about execution statuses
+        Dict[str, Any]: Completeness stats for each data type
     """
-    url = f"{ZEPHYR_BASE_URL}/testexecutions?projectKey={project_id}&maxResults=100"
-    response = await request_zephyr(url)
-    
-    if not response:
-        return {"error": "No response from Zephyr API"}
-    
     stats = {
-        "total_executions": len(response.get("values", [])),
-        "status_id_counts": {},
-        "mapped_status_counts": {},
-        "raw_status_samples": []
+        "requirements": {"fetched": 0, "total": 0, "complete": False},
+        "test_cases": {"fetched": 0, "total": 0, "complete": False}, 
+        "test_executions": {"fetched": 0, "total": 0, "complete": False},
+        "bugs": {"fetched": 0, "total": 0, "complete": False}
     }
     
-    # Status mapping (corrected for German Zephyr instance)
-    status_mapping = {
-        9156746: "NOT_EXECUTED",  # 55 executions - "nicht ausgeführt"
-        9156747: "IN_PROGRESS",   # 1 execution - "im Test"  
-        9156748: "PASS",          # 8 executions - "Erfolgreich"
-        9156749: "FAIL",          # 3 executions - "Fehlgeschlagen"
-        9156750: "BLOCKED",       # 5 executions - "Blockiert"
+    # Check requirements
+    req_url = f"{JIRA_BASE_URL}/search/jql"
+    req_payload = {
+        "jql": f"project = {project_id} AND issuetype IN (Epic, Story)",
+        "maxResults": 0  # Just get count
     }
+    req_response = await request_jira(req_url, req_payload)
+    if req_response:
+        stats["requirements"]["total"] = req_response.get("total", 0)
+        stats["requirements"]["fetched"] = min(100, stats["requirements"]["total"])
+        stats["requirements"]["complete"] = stats["requirements"]["total"] <= 100
     
-    for execution in response.get("values", []):
-        status_id = execution.get("testExecutionStatus", {}).get("id")
-        mapped_status = status_mapping.get(status_id, "NOT_EXECUTED")
-        
-        # Count status IDs
-        stats["status_id_counts"][str(status_id)] = stats["status_id_counts"].get(str(status_id), 0) + 1
-        
-        # Count mapped statuses
-        stats["mapped_status_counts"][mapped_status] = stats["mapped_status_counts"].get(mapped_status, 0) + 1
-        
-        # Sample raw data (first 3)
-        if len(stats["raw_status_samples"]) < 3:
-            stats["raw_status_samples"].append({
-                "test_case": execution.get("testCase", {}).get("self", "").split("/")[-2] if execution.get("testCase", {}).get("self") else "unknown",
-                "status_id": status_id,
-                "mapped_status": mapped_status,
-                "executed_date": execution.get("actualEndDate"),
-                "executed_by": execution.get("executedById")
-            })
+    # Check test cases  
+    tc_url = f"{ZEPHYR_BASE_URL}/testcases?projectKey={project_id}&maxResults=0"
+    tc_response = await request_zephyr(tc_url)
+    if tc_response:
+        stats["test_cases"]["total"] = tc_response.get("total", 0)
+        stats["test_cases"]["fetched"] = min(100, stats["test_cases"]["total"])
+        stats["test_cases"]["complete"] = stats["test_cases"]["total"] <= 100
+    
+    # Check test executions
+    te_url = f"{ZEPHYR_BASE_URL}/testexecutions?projectKey={project_id}&maxResults=0"
+    te_response = await request_zephyr(te_url)
+    if te_response:
+        stats["test_executions"]["total"] = te_response.get("total", 0)
+        stats["test_executions"]["fetched"] = min(100, stats["test_executions"]["total"])
+        stats["test_executions"]["complete"] = stats["test_executions"]["total"] <= 100
+    
+    # Check bugs
+    bug_url = f"{JIRA_BASE_URL}/search/jql"
+    bug_payload = {
+        "jql": f"project = {project_id} AND issuetype = Bug",
+        "maxResults": 0
+    }
+    bug_response = await request_jira(bug_url, bug_payload)
+    if bug_response:
+        stats["bugs"]["total"] = bug_response.get("total", 0)
+        stats["bugs"]["fetched"] = min(100, stats["bugs"]["total"])
+        stats["bugs"]["complete"] = stats["bugs"]["total"] <= 100
     
     return stats
+
+@mcp.tool()
+async def get_visual_analytics_data(project_id: str = PROJECT_ID) -> Dict[str, Any]:
+    """
+    Generate comprehensive visual analytics data for dashboard charts and AI Story.
+    
+    Returns rich data for:
+    - Time-series charts of bug creation/resolution
+    - Test execution trends over time
+    - Status distribution pie charts
+    - Priority heat maps
+    - Epic/Story progress visualization
+    """
+    from datetime import datetime, timedelta
+    from collections import defaultdict
+    
+    visual_data = {
+        "bug_trends": {
+            "timeline": [],
+            "priority_distribution": {},
+            "status_flow": [],
+            "resolution_velocity": []
+        },
+        "test_trends": {
+            "execution_timeline": [],
+            "success_rate_trend": [],
+            "test_coverage_by_epic": {}
+        },
+        "requirements_progress": {
+            "epic_completion": [],
+            "story_points_burndown": [],
+            "requirement_types": {}
+        },
+        "quality_metrics": {
+            "defect_density": 0,
+            "test_effectiveness": 0,
+            "requirement_stability": 0
+        }
+    }
+    
+    # Get all data types
+    bugs_response = await fetch_bugs(project_id)
+    requirements_response = await fetch_requirements(project_id)
+    executions_response = await fetch_test_executions(project_id)
+    
+    bugs = bugs_response.get("items", [])
+    requirements = requirements_response.get("items", [])
+    executions = executions_response.get("items", [])
+    
+    # Bug trends analysis
+    bug_dates = defaultdict(int)
+    priority_counts = defaultdict(int)
+    
+    for bug in bugs:
+        created_date = bug.get("created_date", "")[:10]  # YYYY-MM-DD
+        priority = bug.get("priority", "MEDIUM")
+        
+        bug_dates[created_date] += 1
+        priority_counts[priority] += 1
+    
+    visual_data["bug_trends"]["timeline"] = [
+        {"date": date, "count": count} for date, count in sorted(bug_dates.items())
+    ]
+    visual_data["bug_trends"]["priority_distribution"] = dict(priority_counts)
+    
+    # Test execution trends
+    execution_dates = defaultdict(lambda: {"total": 0, "passed": 0, "failed": 0})
+    
+    for execution in executions:
+        exec_date = execution.get("execution_time", "")[:10]
+        status = execution.get("execution_status", "NOT_EXECUTED")
+        
+        execution_dates[exec_date]["total"] += 1
+        if status == "PASS":
+            execution_dates[exec_date]["passed"] += 1
+        elif status == "FAIL":
+            execution_dates[exec_date]["failed"] += 1
+    
+    visual_data["test_trends"]["execution_timeline"] = [
+        {
+            "date": date,
+            "total": data["total"],
+            "passed": data["passed"],
+            "failed": data["failed"],
+            "success_rate": (data["passed"] / data["total"] * 100) if data["total"] > 0 else 0
+        }
+        for date, data in sorted(execution_dates.items())
+    ]
+    
+    # Requirements progress by Epic
+    epic_progress = defaultdict(lambda: {"total": 0, "completed": 0, "in_progress": 0})
+    
+    for req in requirements:
+        epic_id = req.get("epic_id") or "No Epic"
+        status = req.get("status", "TODO")
+        
+        epic_progress[epic_id]["total"] += 1
+        if status == "DONE":
+            epic_progress[epic_id]["completed"] += 1
+        elif status == "IN_PROGRESS":
+            epic_progress[epic_id]["in_progress"] += 1
+    
+    visual_data["requirements_progress"]["epic_completion"] = [
+        {
+            "epic": epic,
+            "total": data["total"],
+            "completed": data["completed"],
+            "in_progress": data["in_progress"],
+            "completion_rate": (data["completed"] / data["total"] * 100) if data["total"] > 0 else 0
+        }
+        for epic, data in epic_progress.items()
+    ]
+    
+    # Quality metrics calculations
+    total_requirements = len(requirements)
+    total_bugs = len(bugs)
+    passed_tests = len([e for e in executions if e.get("execution_status") == "PASS"])
+    total_executions = len([e for e in executions if e.get("execution_status") != "NOT_EXECUTED"])
+    
+    visual_data["quality_metrics"] = {
+        "defect_density": round((total_bugs / total_requirements * 100), 2) if total_requirements > 0 else 0,
+        "test_effectiveness": round((passed_tests / total_executions * 100), 2) if total_executions > 0 else 0,
+        "requirement_stability": round((len([r for r in requirements if r.get("status") == "DONE"]) / total_requirements * 100), 2) if total_requirements > 0 else 0
+    }
+    
+    return visual_data
+
+@mcp.tool()
+async def get_intelligent_insights(project_id: str = PROJECT_ID) -> Dict[str, Any]:
+    """
+    Generate intelligent insights using actual ticket content for AI Story generation.
+    
+    Analyzes:
+    - Bug summaries for common patterns and themes
+    - Requirement descriptions for context and business value
+    - Cross-references between bugs and requirements
+    - Quality trends and predictions
+    """
+    import re
+    from collections import Counter
+    
+    # Get all data
+    bugs_response = await fetch_bugs(project_id)
+    requirements_response = await fetch_requirements(project_id)
+    executions_response = await fetch_test_executions(project_id)
+    
+    bugs = bugs_response.get("items", [])
+    requirements = requirements_response.get("items", [])
+    executions = executions_response.get("items", [])
+    
+    insights = {
+        "bug_analysis": {
+            "common_themes": [],
+            "critical_issues": [],
+            "affected_components": []
+        },
+        "requirement_analysis": {
+            "business_priorities": [],
+            "implementation_complexity": [],
+            "user_stories": []
+        },
+        "quality_trends": {
+            "improvement_areas": [],
+            "success_patterns": [],
+            "risk_factors": []
+        },
+        "predictive_insights": {
+            "completion_forecast": "",
+            "quality_trajectory": "",
+            "recommended_actions": []
+        }
+    }
+    
+    # Analyze bug summaries for patterns
+    bug_terms = []
+    critical_bugs = []
+    component_issues = Counter()
+    
+    for bug in bugs:
+        summary = bug.get("title", "").lower()
+        priority = bug.get("priority", "MEDIUM")
+        component = bug.get("component")
+        
+        # Extract keywords from bug summaries
+        words = re.findall(r'\b\w+\b', summary)
+        bug_terms.extend([w for w in words if len(w) > 3])
+        
+        if priority in ["CRITICAL", "HIGH"]:
+            critical_bugs.append({
+                "id": bug.get("id"),
+                "title": bug.get("title"),
+                "priority": priority,
+                "component": component
+            })
+        
+        if component:
+            component_issues[component] += 1
+    
+    # Find common bug themes
+    common_terms = Counter(bug_terms).most_common(10)
+    insights["bug_analysis"]["common_themes"] = [
+        {"term": term, "frequency": freq} for term, freq in common_terms
+    ]
+    insights["bug_analysis"]["critical_issues"] = critical_bugs[:5]
+    insights["bug_analysis"]["affected_components"] = [
+        {"component": comp, "bug_count": count} 
+        for comp, count in component_issues.most_common(5)
+    ]
+    
+    # Analyze requirements for business context
+    business_keywords = ["kunde", "benutzer", "anwender", "geschäft", "umsatz", "effizienz"]
+    complex_keywords = ["integration", "schnittstelle", "migration", "sicherheit", "performance"]
+    
+    business_reqs = []
+    complex_reqs = []
+    user_stories = []
+    
+    for req in requirements:
+        description = req.get("description", "").lower()
+        title = req.get("title", "")
+        
+        # Check for business value indicators
+        if any(keyword in description for keyword in business_keywords):
+            business_reqs.append({
+                "id": req.get("id"),
+                "title": title,
+                "business_value": req.get("business_value", 50),
+                "epic_id": req.get("epic_id")
+            })
+        
+        # Check for complexity indicators
+        if any(keyword in description for keyword in complex_keywords):
+            complex_reqs.append({
+                "id": req.get("id"),
+                "title": title,
+                "priority": req.get("priority"),
+                "story_points": req.get("story_points")
+            })
+        
+        # Extract user story format (Als... möchte ich... damit...)
+        if "als" in description and "möchte" in description:
+            user_stories.append({
+                "id": req.get("id"),
+                "title": title,
+                "status": req.get("status")
+            })
+    
+    insights["requirement_analysis"]["business_priorities"] = business_reqs[:5]
+    insights["requirement_analysis"]["implementation_complexity"] = complex_reqs[:5]
+    insights["requirement_analysis"]["user_stories"] = user_stories[:10]
+    
+    # Quality trend analysis
+    total_tests = len(executions)
+    passed_tests = len([e for e in executions if e.get("execution_status") == "PASS"])
+    failed_tests = len([e for e in executions if e.get("execution_status") == "FAIL"])
+    blocked_tests = len([e for e in executions if e.get("execution_status") == "BLOCKED"])
+    
+    success_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
+    
+    # Generate improvement recommendations
+    recommendations = []
+    if failed_tests > passed_tests:
+        recommendations.append("Focus on fixing failing tests - current failure rate is high")
+    if blocked_tests > 5:
+        recommendations.append("Address blocked test cases to improve test coverage")
+    if len(critical_bugs) > 3:
+        recommendations.append("Prioritize critical bug fixes before new development")
+    if success_rate < 70:
+        recommendations.append("Improve test quality and development practices")
+    
+    insights["quality_trends"]["improvement_areas"] = [
+        f"Test success rate: {success_rate:.1f}%",
+        f"Critical bugs: {len(critical_bugs)}",
+        f"Blocked tests: {blocked_tests}"
+    ]
+    
+    insights["predictive_insights"]["recommended_actions"] = recommendations
+    
+    # Generate completion forecast based on current trends
+    completed_reqs = len([r for r in requirements if r.get("status") == "DONE"])
+    total_reqs = len(requirements)
+    completion_rate = (completed_reqs / total_reqs * 100) if total_reqs > 0 else 0
+    
+    if completion_rate > 80:
+        forecast = "Project nearing completion - focus on final testing and bug fixes"
+    elif completion_rate > 50:
+        forecast = "Project in active development phase - maintain current velocity"
+    else:
+        forecast = "Project in early development - establish solid foundations"
+    
+    insights["predictive_insights"]["completion_forecast"] = forecast
+    insights["predictive_insights"]["quality_trajectory"] = f"Current test success rate of {success_rate:.1f}% {'indicates good quality practices' if success_rate > 70 else 'needs improvement'}"
+    
+    return insights
 
 @mcp.tool()
 async def get_test_executions(project_id: str = PROJECT_ID) -> Dict[str, Any]:
