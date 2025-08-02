@@ -15,11 +15,134 @@
       ],
       "timestamp": "2025-07-27T18:48:04.341Z",
       "context": "Completed building mcp-sem-4aireporter following user's Rule #1 and Rule #2",
-      "accessCount": 0,
-      "lastAccessed": "2025-07-27T18:48:04.341Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-07-28T19:35:20.419Z",
       "lastVerified": "2025-07-27T18:48:04.341Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753731326482_fn6801x0c",
+      "content": "User executed get_test_executions after major fixes for test execution status mapping issue. Previous issue: all executions showed \"NOT_EXECUTED\" status. Fixed by implementing map_zephyr_execution_status function with comprehensive status mapping (PASSED->PASS, FAILED->FAIL, etc.) and multiple fallback field extraction from Zephyr API responses. Also fixed JSON-RPC protocol issue where debug print statements were interfering with STDIO transport.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "api",
+        "test-execution-status",
+        "status-mapping",
+        "zephyr-api",
+        "json-rpc-debug",
+        "completed-fix"
+      ],
+      "timestamp": "2025-07-28T19:35:26.482Z",
+      "context": "Testing fixed test execution status mapping after debugging session",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-28T19:35:26.482Z",
+      "lastVerified": "2025-07-28T19:35:26.482Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753732364180_68zg14qib",
+      "content": "User reports test executions still show \"NOT_EXECUTED\" status despite having executed test cases, and execution time shows today's date instead of actual execution dates. Need to debug real Zephyr API response structure to fix field extraction.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "api",
+        "test-execution-debug",
+        "zephyr-api",
+        "field-extraction",
+        "status-mapping",
+        "date-mapping"
+      ],
+      "timestamp": "2025-07-28T19:52:44.180Z",
+      "context": "Debugging test execution status and date mapping issues",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-28T19:52:44.180Z",
+      "lastVerified": "2025-07-28T19:52:44.180Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753732463494_3x9b5fo4q",
+      "content": "Fixed test execution field mapping by simplifying extraction logic. Removed complex fallback logic and mapped fields directly from Zephyr API: executionStatus.name for status, executedOn/executionDate for dates, executedBy.displayName for user, environment.name for environment, testCycle.build/version for build info. Removed debug logging that was interfering with JSON-RPC protocol.",
+      "type": "config",
+      "tags": [
+        "config",
+        "api",
+        "field-mapping",
+        "zephyr-api",
+        "test-executions",
+        "simplified-logic",
+        "direct-mapping"
+      ],
+      "timestamp": "2025-07-28T19:54:23.494Z",
+      "context": "Simplified field mapping for test executions based on user feedback",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-28T19:54:23.494Z",
+      "lastVerified": "2025-07-28T19:54:23.494Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753734144132_af67p5ayl",
+      "content": "Successfully implemented direct field mapping for Zephyr test executions based on real API response structure. Key mappings: actualEndDate for execution time, testExecutionStatus.id mapped to status names (9156748=PASS, 9156746=FAIL), test case key extracted from testCase.self URL, executedById for user, comment for failure reason. No more complex logic - simple 1:1 field mapping.",
+      "type": "error",
+      "tags": [
+        "error",
+        "api",
+        "field-mapping-completed",
+        "zephyr-api",
+        "direct-mapping",
+        "test-executions",
+        "actualEndDate",
+        "testExecutionStatus"
+      ],
+      "timestamp": "2025-07-28T20:22:24.132Z",
+      "context": "Completed direct field mapping implementation",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-28T20:22:24.132Z",
+      "lastVerified": "2025-07-28T20:22:24.132Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753735056054_er26b6onk",
+      "content": "Fixed all field mappings for bugs, test cases, requirements, and test executions with direct 1:1 API field mapping. Key fixes: German JIRA priorities (\"4-Sehr hoch\"→CRITICAL), Zephyr status/priority IDs mapped correctly, complex ADF description parsing for requirements, actualEndDate for execution times, testExecutionStatus.id for execution status. All mappings now use actual API response structures without complex logic.",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "api",
+        "field-mapping-complete",
+        "direct-mapping",
+        "german-priorities",
+        "zephyr-ids",
+        "adf-parsing",
+        "all-data-types"
+      ],
+      "timestamp": "2025-07-28T20:37:36.054Z",
+      "context": "Completed comprehensive field mapping fixes for all data types",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-28T20:37:36.054Z",
+      "lastVerified": "2025-07-28T20:37:36.054Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753742052390_uhrfmij85",
+      "content": "User feedback for next evolution: 1) Progress bars unclear (Requirements/Test Cases full, Executions/Bugs not), 2) AI Story page needs visuals (currently text-only), 3) Future outlook is static, 4) Not using ticket details effectively for insights (bug summaries, req descriptions). Need comprehensive improvements.",
+      "type": "error",
+      "tags": [
+        "error",
+        "user-feedback",
+        "progress-bars",
+        "visuals",
+        "ai-story",
+        "ticket-details",
+        "evolution",
+        "improvements"
+      ],
+      "timestamp": "2025-07-28T22:34:12.390Z",
+      "context": "User feedback for major improvements to MCP reporting system",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-28T22:34:12.390Z",
+      "lastVerified": "2025-07-28T22:34:12.390Z",
       "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-07-27T18:48:04.341Z"
+  "lastUpdated": "2025-07-28T22:34:12.390Z"
 }
