@@ -123,8 +123,11 @@ class MCPClient:
     
     async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Call MCP tool with arguments"""
-        if not self.initialized:
-            await self.start()
+        if not self.process or not self.initialized:
+            raise HTTPException(
+                status_code=503,
+                detail="MCP server not available. Please check server configuration and credentials."
+            )
             
         request = {
             "jsonrpc": "2.0",
@@ -136,15 +139,21 @@ class MCPClient:
             }
         }
         
-        response = await self._send_request(request)
-        
-        if "error" in response:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"MCP tool error: {response['error']}"
-            )
+        try:
+            response = await self._send_request(request)
             
-        return response.get("result", {})
+            if "error" in response:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"MCP tool error: {response['error']}"
+                )
+                
+            return response.get("result", {})
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to communicate with MCP server: {str(e)}"
+            )
     
     async def list_tools(self) -> Dict[str, Any]:
         """List available MCP tools"""
@@ -175,7 +184,13 @@ mcp_client = MCPClient()
 @app.on_event("startup")
 async def startup_event():
     """Initialize MCP client on startup"""
-    await mcp_client.start()
+    try:
+        await mcp_client.start()
+        print("✅ MCP client started successfully")
+    except Exception as e:
+        print(f"⚠️ MCP client startup failed: {e}")
+        # Continue without MCP client for now
+        pass
 
 @app.on_event("shutdown")
 async def shutdown_event():

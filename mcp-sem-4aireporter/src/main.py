@@ -1715,23 +1715,8 @@ if __name__ == "__main__":
     # Get transport mode from environment variable
     transport_mode = os.getenv("MCP_TRANSPORT", "stdio")
     
-    # Support for HTTP server deployment
-    if transport_mode == "http":
-        print(f"🚀 Starting MCP server in HTTP mode on port 8000...")
-        print(f"📡 MCP endpoint will be available at:")
-        print(f"   - POST http://localhost:8000/mcp")
-        print(f"   - JSON-RPC 2.0 format required")
-        print(f"   - Example: curl -X POST http://localhost:8000/mcp -H 'Content-Type: application/json' -d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{{}}}}'")
-        mcp.run(transport="streamable-http")
-    elif transport_mode == "sse":
-        print(f"🚀 Starting MCP server in SSE mode on port 8000...")
-        print(f"📡 SSE endpoints will be available at:")
-        print(f"   - SSE Stream: GET http://localhost:8000/sse")
-        print(f"   - Messages: POST http://localhost:8000/messages")
-        print(f"   - JSON-RPC 2.0 format required")
-        print(f"⚠️  Note: SSE transport is deprecated - use for testing only")
-        mcp.run(transport="sse")
-    elif transport_mode == "rest":
+    # Support for REST API server deployment
+    if transport_mode == "rest":
         print(f"🚀 Starting REST API wrapper on port 8080...")
         print(f"🌐 REST endpoints will be available at:")
         print(f"   - API Docs: http://localhost:8080/docs")
@@ -1757,7 +1742,5 @@ if __name__ == "__main__":
         print(f"🚀 Starting MCP server in stdio mode for MCP protocol...")
         print(f"📋 Available transport modes:")
         print(f"   - stdio: Standard MCP protocol (default)")
-        print(f"   - http: HTTP JSON-RPC on port 8000")
-        print(f"   - sse: Server-Sent Events on port 8000 (deprecated)")  
-        print(f"   - rest: REST API wrapper on port 8080")
+        print(f"   - rest: REST API wrapper on port 8080 (recommended for server deployment)")
         mcp.run(transport="stdio")

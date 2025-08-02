@@ -82,19 +82,15 @@ This MCP server provides a complete test management solution integrating JIRA re
    docker-compose down
    ```
 
-#### Server Deployment Options
+#### Server Deployment Mode (REST API)
 
-**🎯 Choose the right deployment mode for your use case:**
-
-##### **Option A: REST API Mode (Recommended for Simple API Access)**
-
-Perfect for standard HTTP REST API usage:
+**Perfect for server deployment with simple HTTP REST API access:**
 
 1. **Configure Environment**
    ```bash
    cp .env.template .env
    # Edit .env with your actual credentials
-   # Set MCP_TRANSPORT=rest
+   # Set MCP_TRANSPORT=rest for REST API mode
    ```
 
 2. **Deploy REST API Server**
@@ -108,16 +104,22 @@ Perfect for standard HTTP REST API usage:
 
 3. **Use Simple REST Endpoints**
    ```bash
-   # API Documentation
+   # API Documentation (Swagger UI)
    curl http://your-server:8080/docs
    
    # Health check
    curl http://your-server:8080/health
    
-   # Get requirements (simple REST)
+   # Get requirements
    curl http://your-server:8080/api/requirements/SEM
    
-   # Create test case (simple REST)
+   # Get bugs
+   curl http://your-server:8080/api/bugs/SEM
+   
+   # Get test cases
+   curl http://your-server:8080/api/test-cases/SEM
+   
+   # Create test case
    curl -X POST http://your-server:8080/api/test-cases \
      -H "Content-Type: application/json" \
      -d '{
@@ -126,69 +128,33 @@ Perfect for standard HTTP REST API usage:
        "project_id": "SEM"
      }'
    
+   # Link test case to requirement
+   curl -X POST http://your-server:8080/api/test-cases/link \
+     -H "Content-Type: application/json" \
+     -d '{
+       "test_case_key": "SEM-T123",
+       "jira_issue_id": "SEM-456"
+     }'
+   
    # Get analytics
    curl http://your-server:8080/api/analytics/insights/SEM
    ```
 
-##### **Option B: HTTP JSON-RPC Mode (Advanced MCP Access)**
+### Available REST Endpoints
 
-For MCP protocol compliance via HTTP:
-
-1. **Configure Environment**
-   ```bash
-   # Set MCP_TRANSPORT=http for JSON-RPC mode
-   MCP_TRANSPORT=http
-   ```
-
-2. **Deploy HTTP Server**
-   ```bash
-   # Docker deployment
-   docker-compose -f docker-compose-server.yml up -d
-   ```
-
-3. **Use MCP Protocol via HTTP**
-   ```bash
-   # Initialize session
-   curl -X POST http://your-server:8000/mcp \
-     -H "Content-Type: application/json" \
-     -d '{
-       "jsonrpc": "2.0",
-       "id": 1,
-       "method": "initialize",
-       "params": {
-         "protocolVersion": "2024-11-05",
-         "capabilities": {},
-         "clientInfo": {"name": "api-client", "version": "1.0.0"}
-       }
-     }'
-   
-   # List tools
-   curl -X POST http://your-server:8000/mcp \
-     -H "Content-Type: application/json" \
-     -d '{"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}'
-   
-   # Call tool
-   curl -X POST http://your-server:8000/mcp \
-     -H "Content-Type: application/json" \
-     -d '{
-       "jsonrpc": "2.0",
-       "id": 3,
-       "method": "tools/call",
-       "params": {
-         "name": "get_requirements",
-         "arguments": {"project_id": "SEM"}
-       }
-     }'
-   ```
-
-##### **Option C: SSE Mode (Deprecated)**
-
-For Server-Sent Events (not recommended):
-
-```bash
-# Set MCP_TRANSPORT=sse (deprecated)
-MCP_TRANSPORT=sse uv run python src/main.py
-```
+- **`GET /docs`** - Interactive API documentation (Swagger UI)
+- **`GET /health`** - Health check endpoint
+- **`GET /api/tools`** - List all available tools
+- **`GET /api/requirements/{project_id}`** - Get JIRA requirements/epics
+- **`GET /api/test-cases/{project_id}`** - Get Zephyr test cases  
+- **`GET /api/bugs/{project_id}`** - Get JIRA bugs
+- **`GET /api/test-executions/{project_id}`** - Get test execution data
+- **`POST /api/test-cases`** - Create new test case
+- **`POST /api/test-cases/link`** - Link test case to requirement
+- **`GET /api/analytics/insights/{project_id}`** - AI-powered insights
+- **`GET /api/analytics/visual/{project_id}`** - Visual analytics data
+- **`GET /api/analytics/outlook/{project_id}`** - Future outlook predictions
+- **`GET /api/analytics/completeness/{project_id}`** - Data completeness stats
 
 4. **Server Management**
    ```bash
