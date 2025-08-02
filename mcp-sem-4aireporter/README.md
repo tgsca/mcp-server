@@ -58,6 +58,7 @@ This MCP server provides a complete test management solution integrating JIRA re
 
 ### Docker Deployment
 
+#### Local Development Mode (MCP Protocol)
 1. **Configure Environment**
    ```bash
    cp .env.template .env
@@ -79,6 +80,129 @@ This MCP server provides a complete test management solution integrating JIRA re
    
    # Stop services
    docker-compose down
+   ```
+
+#### Server Deployment Options
+
+**🎯 Choose the right deployment mode for your use case:**
+
+##### **Option A: REST API Mode (Recommended for Simple API Access)**
+
+Perfect for standard HTTP REST API usage:
+
+1. **Configure Environment**
+   ```bash
+   cp .env.template .env
+   # Edit .env with your actual credentials
+   # Set MCP_TRANSPORT=rest
+   ```
+
+2. **Deploy REST API Server**
+   ```bash
+   # Local development
+   MCP_TRANSPORT=rest uv run python src/main.py
+   
+   # Docker deployment
+   docker-compose -f docker-compose-rest.yml up -d
+   ```
+
+3. **Use Simple REST Endpoints**
+   ```bash
+   # API Documentation
+   curl http://your-server:8080/docs
+   
+   # Health check
+   curl http://your-server:8080/health
+   
+   # Get requirements (simple REST)
+   curl http://your-server:8080/api/requirements/SEM
+   
+   # Create test case (simple REST)
+   curl -X POST http://your-server:8080/api/test-cases \
+     -H "Content-Type: application/json" \
+     -d '{
+       "name": "Login Test",
+       "objective": "Test user login functionality",
+       "project_id": "SEM"
+     }'
+   
+   # Get analytics
+   curl http://your-server:8080/api/analytics/insights/SEM
+   ```
+
+##### **Option B: HTTP JSON-RPC Mode (Advanced MCP Access)**
+
+For MCP protocol compliance via HTTP:
+
+1. **Configure Environment**
+   ```bash
+   # Set MCP_TRANSPORT=http for JSON-RPC mode
+   MCP_TRANSPORT=http
+   ```
+
+2. **Deploy HTTP Server**
+   ```bash
+   # Docker deployment
+   docker-compose -f docker-compose-server.yml up -d
+   ```
+
+3. **Use MCP Protocol via HTTP**
+   ```bash
+   # Initialize session
+   curl -X POST http://your-server:8000/mcp \
+     -H "Content-Type: application/json" \
+     -d '{
+       "jsonrpc": "2.0",
+       "id": 1,
+       "method": "initialize",
+       "params": {
+         "protocolVersion": "2024-11-05",
+         "capabilities": {},
+         "clientInfo": {"name": "api-client", "version": "1.0.0"}
+       }
+     }'
+   
+   # List tools
+   curl -X POST http://your-server:8000/mcp \
+     -H "Content-Type: application/json" \
+     -d '{"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}'
+   
+   # Call tool
+   curl -X POST http://your-server:8000/mcp \
+     -H "Content-Type: application/json" \
+     -d '{
+       "jsonrpc": "2.0",
+       "id": 3,
+       "method": "tools/call",
+       "params": {
+         "name": "get_requirements",
+         "arguments": {"project_id": "SEM"}
+       }
+     }'
+   ```
+
+##### **Option C: SSE Mode (Deprecated)**
+
+For Server-Sent Events (not recommended):
+
+```bash
+# Set MCP_TRANSPORT=sse (deprecated)
+MCP_TRANSPORT=sse uv run python src/main.py
+```
+
+4. **Server Management**
+   ```bash
+   # Monitor server logs
+   docker-compose -f docker-compose-server.yml logs -f
+   
+   # Check server status
+   docker-compose -f docker-compose-server.yml ps
+   
+   # Stop server
+   docker-compose -f docker-compose-server.yml down
+   
+   # Restart server
+   docker-compose -f docker-compose-server.yml restart
    ```
 
 ## ⚙️ Configuration
@@ -106,6 +230,12 @@ PROJECT_ID="SEM"
 # Docker-specific
 PYTHONPATH="/app"
 PYTHONUNBUFFERED="1"
+
+# Server Transport Mode
+# stdio = MCP protocol via stdin/stdout (default)
+# http = HTTP API server on port 8000
+# sse = Server-Sent Events on port 8000
+MCP_TRANSPORT="stdio"
 
 # Logging
 LOG_LEVEL="INFO"

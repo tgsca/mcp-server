@@ -1,25 +1,29 @@
 version: '3.8'
 
+# Production server deployment configuration
+# Use this for deploying MCP server as HTTP API on remote servers
+
 services:
-  mcp-sem-4aireporter:
+  mcp-sem-4aireporter-server:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: mcp-sem-4aireporter
+    container_name: mcp-sem-4aireporter-server
     restart: unless-stopped
     
     # Environment variables from .env file
     env_file:
       - .env
     
-    # Environment overrides
+    # Server mode configuration
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
       - MCP_SERVER_NAME=mcp-sem-4aireporter
       - MCP_TRANSPORT=http
+      - LOG_LEVEL=INFO
     
-    # Port mapping for HTTP API mode
+    # Port mapping for HTTP API access
     ports:
       - "8000:8000"
     
@@ -27,48 +31,50 @@ services:
     volumes:
       - ./memories.json:/app/memories.json
       - ./reflections.json:/app/reflections.json
-      - ./logs:/app/logs
+      - mcp-server-logs:/app/logs
     
     # Network configuration
     networks:
-      - mcp-network
+      - mcp-server-network
     
-    # Health check
+    # Health check for HTTP mode
     healthcheck:
-      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     
-    # Resource limits
+    # Resource limits for production
     deploy:
       resources:
         limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
           memory: 512M
           cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
     
     # Logging configuration
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "50m"
+        max-file: "5"
     
     # Labels for easier management
     labels:
-      - "com.mcp.service=sem-4aireporter"
-      - "com.mcp.description=Test Management MCP Server for JIRA/Zephyr Scale"
+      - "com.mcp.service=sem-4aireporter-server"
+      - "com.mcp.description=HTTP API Server for Test Management MCP"
       - "com.mcp.version=1.0"
+      - "com.mcp.mode=http-server"
 
 networks:
-  mcp-network:
+  mcp-server-network:
     driver: bridge
-    name: mcp-network
+    name: mcp-server-network
 
 volumes:
-  mcp-logs:
+  mcp-server-logs:
     driver: local
+    name: mcp-server-logs

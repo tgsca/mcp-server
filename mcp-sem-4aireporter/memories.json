@@ -8,8 +8,8 @@
         "general"
       ],
       "timestamp": "2025-08-01T17:29:30.510Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-01T17:29:30.510Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-02T10:13:56.557Z",
       "lastVerified": "2025-08-01T17:29:30.510Z",
       "status": "fresh"
     },
@@ -22,8 +22,8 @@
         "api"
       ],
       "timestamp": "2025-08-01T17:34:14.842Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-01T17:34:14.842Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-02T10:20:14.092Z",
       "lastVerified": "2025-08-01T17:34:14.842Z",
       "status": "fresh"
     },
@@ -36,8 +36,8 @@
         "api"
       ],
       "timestamp": "2025-08-01T17:38:15.405Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-01T17:38:15.405Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-02T10:20:14.092Z",
       "lastVerified": "2025-08-01T17:38:15.405Z",
       "status": "fresh"
     },
@@ -50,8 +50,8 @@
         "api"
       ],
       "timestamp": "2025-08-02T07:23:06.651Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-02T07:23:06.651Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-02T10:13:56.557Z",
       "lastVerified": "2025-08-02T07:23:06.651Z",
       "status": "fresh"
     },
@@ -63,11 +63,160 @@
         "troubleshooting"
       ],
       "timestamp": "2025-08-02T08:49:15.361Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-02T08:49:15.361Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-02T10:13:56.557Z",
       "lastVerified": "2025-08-02T08:49:15.361Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754124870060_aalvy0hpm",
+      "content": "COMPLETED: Full Docker containerization for mcp-sem-4aireporter\n\nCONTAINERIZATION ACHIEVEMENTS:\n✅ Dockerfile with Python 3.12 slim base image and uv package management\n✅ docker-compose.yml with health checks, resource limits, and persistent volumes\n✅ .dockerignore for optimized build context\n✅ Enhanced .env.template with Docker configuration variables\n✅ Comprehensive README.md rewrite with Docker documentation\n\nCONTAINER FEATURES:\n- Multi-stage build optimization\n- Non-root user security\n- Health monitoring every 30s\n- Resource limits (512MB memory, 0.5 CPU)\n- Persistent data volumes for memories.json and reflections.json\n- JSON logging with rotation\n- MCP network isolation\n\nDOCUMENTATION ENHANCEMENTS:\n- Complete Docker deployment guide\n- AI agent workflow examples\n- Troubleshooting section with health check commands\n- Integration examples for all 11 MCP tools\n- Container monitoring and debugging instructions\n\nFINAL STATUS: Production-ready containerized MCP server with comprehensive documentation",
+      "type": "config",
+      "tags": [
+        "config",
+        "python",
+        "optimization",
+        "deployment",
+        "docker",
+        "containerization"
+      ],
+      "timestamp": "2025-08-02T08:54:30.060Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-02T10:20:14.092Z",
+      "lastVerified": "2025-08-02T08:54:30.060Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754129278232_qzilbnw9g",
+      "content": "Investigating FastMCP streamable-http transport: Need to understand endpoints, request format, and how to call MCP tools via HTTP. Server runs on port 8000 but returns 404 for basic requests.",
+      "type": "general",
+      "tags": [
+        "general",
+        "fastmcp",
+        "http-transport",
+        "mcp-server",
+        "research"
+      ],
+      "timestamp": "2025-08-02T10:07:58.232Z",
+      "context": "Research task for FastMCP HTTP transport configuration",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-02T10:20:14.092Z",
+      "lastVerified": "2025-08-02T10:07:58.232Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754129365937_2ak7289ku",
+      "content": "FastMCP streamable-http research complete: Key endpoints: /mcp (primary), optional /sse. Single POST endpoint with JSON-RPC format. Content-Type: application/json for requests, can respond with text/event-stream for SSE. Default: http://localhost:8000/mcp. Headers: Accept: application/json,text/event-stream. Standard JSON-RPC format for method calls.",
+      "type": "general",
+      "tags": [
+        "general",
+        "fastmcp",
+        "http-transport",
+        "endpoints",
+        "json-rpc",
+        "research-complete"
+      ],
+      "timestamp": "2025-08-02T10:09:25.937Z",
+      "context": "FastMCP HTTP transport research findings",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-02T10:20:14.092Z",
+      "lastVerified": "2025-08-02T10:09:25.937Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754129654431_myfmmr5qp",
+      "content": "Diagnosed FastMCP streamable-http issue: User getting 404 errors on localhost:8000. Problem is missing /mcp endpoint handling. The server starts correctly but requests to /mcp return 404. Solution: Use POST requests to /mcp endpoint with JSON-RPC format.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "fastmcp",
+        "http-transport",
+        "debugging",
+        "404-error",
+        "solution"
+      ],
+      "timestamp": "2025-08-02T10:14:14.431Z",
+      "context": "FastMCP HTTP transport debugging for user",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-02T10:20:14.092Z",
+      "lastVerified": "2025-08-02T10:14:14.431Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754129681049_vurv4whoq",
+      "content": "SOLUTION PROVIDED: FastMCP streamable-http transport 404 issue resolved. Created test script at test-http-server.sh with proper JSON-RPC POST requests to /mcp endpoint. Key points: Only /mcp endpoint exists, must use POST with JSON-RPC 2.0 format, Content-Type application/json required. No GET requests or root endpoint access allowed by design.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "fastmcp",
+        "http-transport",
+        "solution-provided",
+        "test-script",
+        "json-rpc"
+      ],
+      "timestamp": "2025-08-02T10:14:41.049Z",
+      "context": "FastMCP HTTP debugging solution provided to user",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-02T10:20:14.092Z",
+      "lastVerified": "2025-08-02T10:14:41.049Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754129830739_kqq22kv28",
+      "content": "COMPLETED: HTTP API server deployment research and implementation for mcp-sem-4aireporter\n\nFINDINGS:\n✅ FastMCP streamable-http transport implemented successfully  \n⚠️ FastMCP HTTP mode is NOT suitable for simple REST API usage\n✅ Docker containerization fully configured for server deployment\n✅ Comprehensive documentation added for deployment options\n\nTECHNICAL DETAILS:\n- FastMCP streamable-http requires proper MCP client implementation\n- Endpoint exists at /mcp but needs JSON-RPC 2.0 + MCP protocol compliance\n- Server starts correctly on port 8000 with Uvicorn\n- Not compatible with simple curl REST API calls\n\nIMPLEMENTATION STATUS:\n✅ HTTP transport mode added with MCP_TRANSPORT environment variable\n✅ docker-compose-server.yml created for production deployment  \n✅ README updated with server deployment section and limitations\n✅ Test script created (test-server-api.sh) for validation\n✅ Alternative solutions documented (FastAPI wrapper recommendation)\n\nRECOMMENDATION FOR USER:\nFor simple API server deployment, use stdio mode with FastAPI wrapper rather than FastMCP's streamable-http transport. The current implementation provides foundation for both approaches.",
+      "type": "config",
+      "tags": [
+        "config",
+        "api",
+        "deployment",
+        "http",
+        "server"
+      ],
+      "timestamp": "2025-08-02T10:17:10.739Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-02T10:20:14.092Z",
+      "lastVerified": "2025-08-02T10:17:10.739Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754130131957_0dt2vg8nx",
+      "content": "FastMCP SSE vs Streamable HTTP Research Summary 2025:\n\nSSE TRANSPORT (DEPRECATED):\n- Uses Server-Sent Events for server-to-client streaming\n- Requires TWO endpoints: /sse for persistent connection + /messages for HTTP POST\n- Legacy approach from 2024-11-05 MCP spec\n- Still supported in FastMCP but deprecated\n- Example: mcp.run(transport=\"sse\") -> http://localhost:8000/mcp\n- Complex setup with persistent connections\n\nSTREAMABLE HTTP TRANSPORT (CURRENT):\n- Single HTTP endpoint approach since 2025-03-26 MCP spec  \n- SINGLE endpoint: /mcp for both POST and GET methods\n- Simpler architecture, better serverless compatibility\n- Example: mcp.run(transport=\"streamable-http\") -> http://localhost:8000/mcp\n- JSON-RPC 2.0 format for all communications\n- Supports scaling to zero on serverless platforms\n\nTECHNICAL DIFFERENCES:\n- Both use JSON-RPC 2.0 messaging standard\n- SSE: Persistent connection + separate message endpoint\n- Streamable HTTP: Single endpoint, stateless requests\n- Same /mcp endpoint path in both cases\n- POST requests with Content-Type: application/json\n\nDEPLOYMENT RECOMMENDATION:\n- Use Streamable HTTP for new projects\n- SSE only for backward compatibility\n- Both unsuitable for simple REST API usage (require MCP protocol compliance)",
+      "type": "config",
+      "tags": [
+        "config",
+        "deployment",
+        "api",
+        "fastmcp",
+        "sse",
+        "streamable-http",
+        "transport",
+        "research"
+      ],
+      "timestamp": "2025-08-02T10:22:11.957Z",
+      "context": "Research completed for FastMCP SSE vs Streamable HTTP transport comparison",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T10:22:11.957Z",
+      "lastVerified": "2025-08-02T10:22:11.957Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754130466207_ckmrkyflc",
+      "content": "COMPLETED: Comprehensive HTTP API implementation for mcp-sem-4aireporter with multiple transport modes\n\nACHIEVEMENT: Created complete solution with 4 transport modes as requested by user\n\nTRANSPORT MODES IMPLEMENTED:\n✅ stdio: Standard MCP protocol (default)\n✅ http: HTTP JSON-RPC on port 8000 (streamable-http) \n✅ sse: Server-Sent Events on port 8000 (deprecated but functional)\n✅ rest: FastAPI REST API wrapper on port 8080 (recommended for server deployment)\n\nKEY IMPLEMENTATIONS:\n1. Enhanced main.py with all 4 transport modes and clear startup messages\n2. Created rest_api_wrapper.py - Full FastAPI REST API with 15+ endpoints\n3. Added docker-compose-rest.yml for REST API server deployment\n4. Created test-all-transports.sh - Comprehensive test suite for all modes\n5. Updated pyproject.toml with FastAPI dependencies\n6. Updated README.md with complete deployment options and examples\n\nFASTAPI REST API FEATURES:\n- 15+ REST endpoints for all MCP tools\n- OpenAPI/Swagger documentation at /docs\n- Health checks and proper error handling\n- Async MCP client via stdio communication\n- CORS support for browser access\n- Pydantic models for request validation\n\nDOCKER CONFIGURATIONS:\n- docker-compose.yml: Development mode\n- docker-compose-server.yml: HTTP JSON-RPC mode  \n- docker-compose-rest.yml: REST API mode\n\nUSER BENEFITS:\n✅ Simple REST API access (recommended)\n✅ MCP protocol via HTTP (advanced)\n✅ Complete Docker deployment options\n✅ Comprehensive documentation and examples\n✅ Production-ready configurations\n\nRECOMMENDATION: Use MCP_TRANSPORT=rest for simple server API deployment",
+      "type": "error",
+      "tags": [
+        "error",
+        "api",
+        "deployment",
+        "implementation",
+        "transport",
+        "server"
+      ],
+      "timestamp": "2025-08-02T10:27:46.207Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T10:27:46.207Z",
+      "lastVerified": "2025-08-02T10:27:46.207Z",
       "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-02T08:49:15.361Z"
+  "lastUpdated": "2025-08-02T10:27:46.207Z"
 }

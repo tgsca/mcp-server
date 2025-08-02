@@ -1712,4 +1712,52 @@ async def link_test_case_to_requirement(
 
 
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    # Get transport mode from environment variable
+    transport_mode = os.getenv("MCP_TRANSPORT", "stdio")
+    
+    # Support for HTTP server deployment
+    if transport_mode == "http":
+        print(f"🚀 Starting MCP server in HTTP mode on port 8000...")
+        print(f"📡 MCP endpoint will be available at:")
+        print(f"   - POST http://localhost:8000/mcp")
+        print(f"   - JSON-RPC 2.0 format required")
+        print(f"   - Example: curl -X POST http://localhost:8000/mcp -H 'Content-Type: application/json' -d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{{}}}}'")
+        mcp.run(transport="streamable-http")
+    elif transport_mode == "sse":
+        print(f"🚀 Starting MCP server in SSE mode on port 8000...")
+        print(f"📡 SSE endpoints will be available at:")
+        print(f"   - SSE Stream: GET http://localhost:8000/sse")
+        print(f"   - Messages: POST http://localhost:8000/messages")
+        print(f"   - JSON-RPC 2.0 format required")
+        print(f"⚠️  Note: SSE transport is deprecated - use for testing only")
+        mcp.run(transport="sse")
+    elif transport_mode == "rest":
+        print(f"🚀 Starting REST API wrapper on port 8080...")
+        print(f"🌐 REST endpoints will be available at:")
+        print(f"   - API Docs: http://localhost:8080/docs")
+        print(f"   - Health: http://localhost:8080/health")
+        print(f"   - Tools: http://localhost:8080/api/tools")
+        print(f"   - Requirements: GET http://localhost:8080/api/requirements/SEM")
+        print(f"   - Test Cases: GET http://localhost:8080/api/test-cases/SEM")
+        print(f"   - Create Test: POST http://localhost:8080/api/test-cases")
+        
+        # Import and run FastAPI wrapper
+        import sys
+        import uvicorn
+        sys.path.append(os.path.dirname(__file__))
+        
+        try:
+            from rest_api_wrapper import app
+            uvicorn.run(app, host="127.0.0.1", port=8080, log_level="info")
+        except Exception as e:
+            print(f"❌ Failed to start REST API wrapper: {e}")
+            print("Make sure FastAPI dependencies are installed: uv add fastapi uvicorn pydantic")
+            exit(1)
+    else:
+        print(f"🚀 Starting MCP server in stdio mode for MCP protocol...")
+        print(f"📋 Available transport modes:")
+        print(f"   - stdio: Standard MCP protocol (default)")
+        print(f"   - http: HTTP JSON-RPC on port 8000")
+        print(f"   - sse: Server-Sent Events on port 8000 (deprecated)")  
+        print(f"   - rest: REST API wrapper on port 8080")
+        mcp.run(transport="stdio")

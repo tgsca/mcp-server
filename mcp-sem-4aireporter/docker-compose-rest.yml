@@ -1,74 +1,81 @@
 version: '3.8'
 
+# REST API server deployment configuration
+# Provides simple HTTP REST API access to MCP tools
+
 services:
-  mcp-sem-4aireporter:
+  mcp-rest-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: mcp-sem-4aireporter
+    container_name: mcp-rest-api
     restart: unless-stopped
     
     # Environment variables from .env file
     env_file:
       - .env
     
-    # Environment overrides
+    # REST API mode configuration
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
       - MCP_SERVER_NAME=mcp-sem-4aireporter
-      - MCP_TRANSPORT=http
+      - MCP_TRANSPORT=rest
+      - LOG_LEVEL=INFO
     
-    # Port mapping for HTTP API mode
+    # Port mapping for REST API access
     ports:
-      - "8000:8000"
+      - "8080:8080"
     
     # Volumes for persistent data
     volumes:
       - ./memories.json:/app/memories.json
       - ./reflections.json:/app/reflections.json
-      - ./logs:/app/logs
+      - mcp-rest-logs:/app/logs
     
     # Network configuration
     networks:
-      - mcp-network
+      - mcp-rest-network
     
-    # Health check
+    # Health check for REST API mode
     healthcheck:
-      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     
-    # Resource limits
+    # Resource limits for production
     deploy:
       resources:
         limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
           memory: 512M
           cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
     
     # Logging configuration
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "50m"
+        max-file: "5"
     
     # Labels for easier management
     labels:
-      - "com.mcp.service=sem-4aireporter"
-      - "com.mcp.description=Test Management MCP Server for JIRA/Zephyr Scale"
+      - "com.mcp.service=sem-4aireporter-rest"
+      - "com.mcp.description=REST API Server for Test Management MCP"
       - "com.mcp.version=1.0"
+      - "com.mcp.mode=rest-api"
+      - "com.mcp.port=8080"
 
 networks:
-  mcp-network:
+  mcp-rest-network:
     driver: bridge
-    name: mcp-network
+    name: mcp-rest-network
 
 volumes:
-  mcp-logs:
+  mcp-rest-logs:
     driver: local
+    name: mcp-rest-logs

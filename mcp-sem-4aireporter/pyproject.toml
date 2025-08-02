@@ -1,7 +1,7 @@
 [project]
 name = "mcp-sem-4aireporter"
 version = "0.1.0"
-description = "Add your description here"
+description = "MCP server for Test Reporting Dashboard with JIRA and Zephyr integration - supports multiple transport modes"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -9,4 +9,7 @@ dependencies = [
     "mcp[cli]>=1.12.2",
     "python-dotenv>=1.1.1",
     "ruff>=0.12.5",
+    "fastapi>=0.104.1",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.5.0",
 ]
