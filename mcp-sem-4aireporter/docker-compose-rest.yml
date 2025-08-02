@@ -1,5 +1,3 @@
-version: '3.8'
-
 # REST API server deployment configuration
 # Provides simple HTTP REST API access to MCP tools
 
