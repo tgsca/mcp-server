@@ -1,0 +1,73 @@
+{
+  "memories": [
+    {
+      "id": "mem_1754069370510_otgsvm4wb",
+      "content": "Found MCP server mcp-sem-4aireporter with 8 tools:\n1. get_requirements - JIRA Epics/Stories data\n2. get_test_cases - Zephyr test cases data  \n3. get_bugs - JIRA bugs data\n4. get_test_executions - Zephyr test execution data\n5. get_dynamic_future_outlook - AI-generated project predictions\n6. get_data_completeness_stats - Progress stats for dashboard\n7. get_visual_analytics_data - Chart data for visual dashboard\n8. get_intelligent_insights - AI insights from ticket content analysis",
+      "type": "general",
+      "tags": [
+        "general"
+      ],
+      "timestamp": "2025-08-01T17:29:30.510Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-01T17:29:30.510Z",
+      "lastVerified": "2025-08-01T17:29:30.510Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754069654842_ygjxjnrby",
+      "content": "Current MCP server architecture analysis:\n- Uses FastMCP framework with @mcp.tool() decorators\n- Has request_jira() and request_zephyr() helper functions for API calls\n- JIRA uses Basic auth with JIRA_BASIC_AUTH_TOKEN \n- Zephyr uses Bearer token with ZEPHYR_BEARER_TOKEN\n- All tools return standardized MCP spec format with create_response() helper\n- Environment: JIRA_BASE_URL, ZEPHYR_BASE_URL set up in .env\n- Current tools are read-only (GET operations only)\n- Data transformation helpers for mapping status/priority between systems",
+      "type": "config",
+      "tags": [
+        "config",
+        "api"
+      ],
+      "timestamp": "2025-08-01T17:34:14.842Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-01T17:34:14.842Z",
+      "lastVerified": "2025-08-01T17:34:14.842Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754069895405_ixpemdmfn",
+      "content": "Successfully implemented create_test_case and link_test_case_to_requirement tools for mcp-sem-4aireporter:\n\nNEW TOOLS ADDED:\n1. create_test_case - Creates test cases in Zephyr Scale with validation, sanitization, and proper error handling\n2. link_test_case_to_requirement - Links existing test cases to JIRA requirements with bidirectional validation\n\nIMPLEMENTATION DETAILS:\n- Added request_zephyr_post() helper for POST requests with timeout/error handling\n- Added validate_test_case_input() and sanitize_string_input() for input validation\n- Enhanced all API helpers with comprehensive error logging and timeout handling\n- Used Zephyr Scale API endpoints: POST /testcases and POST /testcases/{key}/links/issues\n- Maintained consistency with existing MCP response format using create_response()\n- Code passes all ruff linting and formatting checks\n- All functions include proper type hints and documentation\n\nTOTAL MCP TOOLS: 10 (8 existing + 2 new)",
+      "type": "error",
+      "tags": [
+        "error",
+        "api"
+      ],
+      "timestamp": "2025-08-01T17:38:15.405Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-01T17:38:15.405Z",
+      "lastVerified": "2025-08-01T17:38:15.405Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754119386651_jxtn27rm1",
+      "content": "RESOLVED: Zephyr Scale link visibility issue in JIRA\n\nPROBLEM: Test case links created via API were not visible in JIRA requirements\nROOT CAUSE: JIRA UI configuration - Zephyr blocks not automatically displayed  \nSOLUTION: Manual activation of Zephyr-block in JIRA issues shows linked test cases\n\nKEY LEARNINGS:\n- Zephyr Scale API integration works correctly with proper integer types for issueId\n- Links are bidirectional and functional via API\n- JIRA UI requires manual configuration to display Zephyr integration panels\n- The create_test_case and link_test_case_to_requirement tools work as designed\n\nFINAL STATUS: Both new MCP tools fully functional (11 tools total)",
+      "type": "config",
+      "tags": [
+        "config",
+        "api"
+      ],
+      "timestamp": "2025-08-02T07:23:06.651Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T07:23:06.651Z",
+      "lastVerified": "2025-08-02T07:23:06.651Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754124555361_thtgv0as3",
+      "content": "COMPLETED: Enhanced MCP tool docstrings with AI agent workflow guidance\n\nACHIEVEMENT: Added comprehensive workflow documentation to all key tools\n- Planning tools: get_requirements(), get_test_cases() \n- Implementation tools: create_test_case(), link_test_case_to_requirement()\n- Debug tools: get_test_case_links()\n\nDOCUMENTATION FEATURES:\n- WORKFLOW sections explaining internal operations\n- TYPICAL AI AGENT WORKFLOW with step-by-step guidance  \n- DEPENDENCY CHAIN showing tool sequences\n- Use Cases with multiple scenarios\n- Prerequisites and Notes for each tool\n\nAI AGENT BENEFITS:\n- Clear understanding of tool dependencies\n- Correct operation sequences \n- Error handling guidance\n- Verification procedures\n- Comprehensive workflow planning\n\nRESULT: 11 fully functional MCP tools with complete AI agent workflow guidance",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting"
+      ],
+      "timestamp": "2025-08-02T08:49:15.361Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T08:49:15.361Z",
+      "lastVerified": "2025-08-02T08:49:15.361Z",
+      "status": "fresh"
+    }
+  ],
+  "lastUpdated": "2025-08-02T08:49:15.361Z"
+}
