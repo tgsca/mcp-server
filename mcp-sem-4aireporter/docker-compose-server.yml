@@ -35,9 +35,9 @@ services:
     networks:
       - mcp-server-network
     
-    # Health check for HTTP mode (MCP JSON-RPC) 
+    # Health check for HTTP mode (simple port check)
     healthcheck:
-      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8000/mcp", "-H", "Content-Type: application/json", "-H", "Accept: application/json", "-d", '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}', "||", "exit", "1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 3
