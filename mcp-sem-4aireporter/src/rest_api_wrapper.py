@@ -46,8 +46,8 @@ class TestCaseRequest(BaseModel):
     precondition: Optional[str] = None
     priority: Optional[str] = "Normal"
     status: Optional[str] = "Draft"
-    steps: Optional[list] = []
-    labels: Optional[list] = []
+    steps: Optional[list] = None
+    labels: Optional[list] = None
 
 class LinkRequest(BaseModel):
     test_case_key: str

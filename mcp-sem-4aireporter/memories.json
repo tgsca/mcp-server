@@ -255,7 +255,28 @@
       "lastAccessed": "2025-08-03T11:32:21.085Z",
       "lastVerified": "2025-08-03T11:32:21.085Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754240063690_hdv3ecsrg",
+      "content": "FIXED: REST API test case creation with steps\n\nPROBLEM: REST API POST /api/test-cases was creating test cases but not adding the steps, even though steps were provided in the request\n\nROOT CAUSE: Pydantic mutable default value issue in TestCaseRequest model:\n- steps: Optional[list] = []  # ❌ Mutable default - all instances shared same list object\n- This caused steps to always evaluate to empty list regardless of request content\n\nSOLUTION: Fixed Pydantic model default values:\n- steps: Optional[list] = None  # ✅ Proper default handling\n- labels: Optional[list] = None  # ✅ Also fixed for consistency\n\nVERIFICATION:\n✅ Test case SEM-T54 created with 2 steps successfully\n✅ steps_added: true, note: \"Steps added\"\n✅ Both direct MCP tool and REST API now work correctly\n✅ Complete end-to-end functionality restored\n\nTECHNICAL NOTE: This is a common Python/Pydantic pitfall where mutable defaults ([], {}) are shared across all instances",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "python",
+        "api",
+        "rest-api",
+        "pydantic",
+        "mutable-defaults",
+        "fix",
+        "test-cases",
+        "steps"
+      ],
+      "timestamp": "2025-08-03T16:54:23.690Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T16:54:23.690Z",
+      "lastVerified": "2025-08-03T16:54:23.690Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-03T11:32:21.085Z"
+  "lastUpdated": "2025-08-03T16:54:23.690Z"
 }
