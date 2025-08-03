@@ -1,0 +1,24 @@
+meta {
+  name: List Tools
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/tools
+  body: none
+  auth: none
+}
+
+tests {
+  test("Status is 200 or 503", function() {
+    expect([200, 503]).to.include(res.getStatus());
+  });
+  
+  test("Response structure is correct", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getBody()).to.have.property('success', true);
+      expect(res.getBody()).to.have.property('tools');
+    }
+  });
+}

@@ -77,6 +77,9 @@ class MCPClient:
             # Set environment to use stdio mode for the wrapped MCP server
             env = os.environ.copy()
             env["MCP_TRANSPORT"] = "stdio"
+            # Ensure the subprocess doesn't inherit the REST mode
+            if "MCP_TRANSPORT" in env:
+                env["MCP_TRANSPORT"] = "stdio"
             
             self.process = await asyncio.create_subprocess_exec(
                 *python_cmd,
@@ -90,6 +93,9 @@ class MCPClient:
             
     async def _initialize_session(self):
         """Initialize MCP session"""
+        # Wait a moment for startup messages to finish
+        await asyncio.sleep(1)
+        
         init_request = {
             "jsonrpc": "2.0",
             "id": 1,
@@ -100,7 +106,37 @@ class MCPClient:
                 "clientInfo": {"name": "rest-api-wrapper", "version": "1.0.0"}
             }
         }
+        
+        print("🔧 Sending MCP initialize request...")
         response = await self._send_request(init_request)
+        
+        # Validate initialization response
+        if "error" in response:
+            raise HTTPException(
+                status_code=500,
+                detail=f"MCP initialization failed: {response['error']}"
+            )
+        
+        if "result" not in response:
+            raise HTTPException(
+                status_code=500,
+                detail="MCP initialization failed: No result in response"
+            )
+        
+        # Send initialized notification (required by MCP protocol)
+        print("🔧 Sending MCP initialized notification...")
+        initialized_notification = {
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized",
+            "params": {}
+        }
+        
+        # Send notification (no response expected)
+        request_json = json.dumps(initialized_notification) + "\n"
+        self.process.stdin.write(request_json.encode())
+        await self.process.stdin.drain()
+        
+        print("✅ MCP initialization and notification complete")
         self.initialized = True
         return response
         
@@ -114,12 +150,33 @@ class MCPClient:
         self.process.stdin.write(request_json.encode())
         await self.process.stdin.drain()
         
-        # Read response
-        response_line = await self.process.stdout.readline()
-        if response_line:
-            return json.loads(response_line.decode().strip())
-        else:
-            raise HTTPException(status_code=500, detail="No response from MCP server")
+        # Read response, skip startup messages
+        max_attempts = 10
+        for attempt in range(max_attempts):
+            response_line = await self.process.stdout.readline()
+            if not response_line:
+                raise HTTPException(status_code=500, detail="No response from MCP server")
+                
+            response_text = response_line.decode().strip()
+            print(f"🔍 MCP Server Response (attempt {attempt+1}): {repr(response_text)}")
+            
+            # Skip non-JSON lines (startup messages, logs, etc.)
+            if not response_text:
+                continue
+                
+            # Check if it looks like JSON (starts with { or [)
+            if response_text.startswith('{') or response_text.startswith('['):
+                try:
+                    return json.loads(response_text)
+                except json.JSONDecodeError as e:
+                    print(f"❌ JSON Decode Error: {e}")
+                    continue
+            else:
+                # Skip non-JSON lines (startup messages)
+                print(f"⏭️ Skipping non-JSON line: {repr(response_text)}")
+                continue
+                
+        raise HTTPException(status_code=500, detail=f"No valid JSON response after {max_attempts} attempts")
     
     async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Call MCP tool with arguments"""

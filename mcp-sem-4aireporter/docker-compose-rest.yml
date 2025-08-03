@@ -25,6 +25,10 @@ services:
     ports:
       - "8080:8080"
     
+    # Expose port for inter-container communication
+    expose:
+      - "8080"
+    
     # Volumes for persistent data
     volumes:
       - ./memories.json:/app/memories.json

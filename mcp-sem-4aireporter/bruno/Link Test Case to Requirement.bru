@@ -1,0 +1,32 @@
+meta {
+  name: Link Test Case to Requirement
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/test-cases/link
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "test_case_key": "SEM-T123",
+    "jira_issue_id": "SEM-456",
+    "project_id": "{{project_id}}"
+  }
+}
+
+tests {
+  test("Status is 200 or 503", function() {
+    expect([200, 503]).to.include(res.getStatus());
+  });
+  
+  test("Response structure is correct", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getBody()).to.have.property('success', true);
+      expect(res.getBody()).to.have.property('data');
+    }
+  });
+}

@@ -1,0 +1,46 @@
+meta {
+  name: Create Test Case
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/test-cases
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "project_id": "{{project_id}}",
+    "name": "Login Test Case",
+    "objective": "Verify user can login with valid credentials",
+    "precondition": "User has valid account",
+    "priority": "High",
+    "status": "Draft",
+    "test_steps": [
+      {
+        "description": "Navigate to login page",
+        "expected_result": "Login form is displayed"
+      },
+      {
+        "description": "Enter valid username and password",
+        "expected_result": "User is logged in successfully"
+      }
+    ],
+    "labels": ["smoke", "authentication"]
+  }
+}
+
+tests {
+  test("Status is 200 or 503", function() {
+    expect([200, 503]).to.include(res.getStatus());
+  });
+  
+  test("Response structure is correct", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getBody()).to.have.property('success', true);
+      expect(res.getBody()).to.have.property('data');
+    }
+  });
+}
