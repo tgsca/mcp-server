@@ -44,9 +44,9 @@ class TestCaseRequest(BaseModel):
     name: str
     objective: str
     precondition: Optional[str] = None
-    priority: Optional[str] = "Medium"
+    priority: Optional[str] = "Normal"
     status: Optional[str] = "Draft"
-    test_steps: Optional[list] = []
+    steps: Optional[list] = []
     labels: Optional[list] = []
 
 class LinkRequest(BaseModel):
@@ -343,7 +343,7 @@ async def create_test_case(request: TestCaseRequest):
             "precondition": request.precondition,
             "priority": request.priority,
             "status": request.status,
-            "test_steps": request.test_steps,
+            "steps": request.steps,
             "labels": request.labels
         }
         

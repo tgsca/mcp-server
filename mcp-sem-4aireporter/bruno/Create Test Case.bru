@@ -16,16 +16,18 @@ body:json {
     "name": "Login Test Case",
     "objective": "Verify user can login with valid credentials",
     "precondition": "User has valid account",
-    "priority": "High",
+    "priority": "Normal",
     "status": "Draft",
-    "test_steps": [
+    "steps": [
       {
         "description": "Navigate to login page",
-        "expected_result": "Login form is displayed"
+        "testData": "https://app.example.com/login",
+        "expectedResult": "Login form is displayed"
       },
       {
         "description": "Enter valid username and password",
-        "expected_result": "User is logged in successfully"
+        "testData": "user@test.com / password123",
+        "expectedResult": "User is logged in successfully"
       }
     ],
     "labels": ["smoke", "authentication"]
