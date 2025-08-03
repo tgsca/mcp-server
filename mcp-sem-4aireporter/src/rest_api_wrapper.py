@@ -359,7 +359,7 @@ async def link_test_case(request: LinkRequest):
     try:
         arguments = {
             "test_case_key": request.test_case_key,
-            "jira_issue_id": request.jira_issue_id,
+            "requirement_key": request.jira_issue_id,
             "project_id": request.project_id
         }
         
