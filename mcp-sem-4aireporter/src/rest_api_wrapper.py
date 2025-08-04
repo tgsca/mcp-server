@@ -331,6 +331,70 @@ async def get_test_executions(project_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Get test cases by requirement
+@app.get("/api/requirements/{requirement_key}/test-cases")
+async def get_test_cases_by_requirement(requirement_key: str):
+    """Get all test cases linked to a specific JIRA requirement
+    
+    Args:
+        requirement_key: JIRA requirement key (e.g., SEM-11, PROJ-123)
+                        Project ID is automatically extracted from the key
+    
+    Returns:
+        JSON response with test cases linked to the requirement
+        
+    Example:
+        GET /api/requirements/SEM-11/test-cases
+        Returns all test cases linked to requirement SEM-11
+    """
+    try:
+        result = await mcp_client.call_tool("get_test_cases_by_requirement", {"requirement_key": requirement_key})
+        
+        # Extract data for cleaner response
+        if result.get("structuredContent", {}).get("result", {}).get("items"):
+            test_cases = result["structuredContent"]["result"]["items"]
+            metadata = result["structuredContent"]["result"]["metadata"]
+            
+            # Extract project_id from requirement_key if not in metadata
+            project_id = metadata.get("additional_info", {}).get("project_id", "")
+            if not project_id and "-" in requirement_key:
+                project_id = requirement_key.split("-")[0]
+            
+            return {
+                "success": True,
+                "data": {
+                    "requirement_key": requirement_key,
+                    "project_id": project_id,
+                    "test_cases": test_cases,
+                    "total_found": len(test_cases),
+                    "search_info": {
+                        "scope": metadata.get("additional_info", {}).get("search_scope", ""),
+                        "sync_time": metadata.get("sync_time", "")
+                    }
+                },
+                "count": len(test_cases)
+            }
+        else:
+            # Handle error responses
+            if "error" in result.get("structuredContent", {}).get("result", {}):
+                error_msg = result["structuredContent"]["result"]["error"]
+                raise HTTPException(status_code=404, detail=error_msg)
+            
+            return {
+                "success": True,
+                "data": {
+                    "requirement_key": requirement_key,
+                    "test_cases": [],
+                    "total_found": 0
+                },
+                "count": 0
+            }
+            
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Create test case
 @app.post("/api/test-cases")
 async def create_test_case(request: TestCaseRequest):

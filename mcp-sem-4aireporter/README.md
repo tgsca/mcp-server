@@ -119,6 +119,9 @@ This MCP server provides a complete test management solution integrating JIRA re
    # Get test cases
    curl http://your-server:8080/api/test-cases/SEM
    
+   # Get test cases linked to specific requirement (project ID auto-extracted)
+   curl http://your-server:8080/api/requirements/SEM-11/test-cases
+   
    # Create test case
    curl -X POST http://your-server:8080/api/test-cases \
      -H "Content-Type: application/json" \
@@ -149,6 +152,7 @@ This MCP server provides a complete test management solution integrating JIRA re
 - **`GET /api/test-cases/{project_id}`** - Get Zephyr test cases  
 - **`GET /api/bugs/{project_id}`** - Get JIRA bugs
 - **`GET /api/test-executions/{project_id}`** - Get test execution data
+- **`GET /api/requirements/{requirement_key}/test-cases`** - Get test cases linked to a specific requirement
 - **`POST /api/test-cases`** - Create new test case
 - **`POST /api/test-cases/link`** - Link test case to requirement
 - **`GET /api/analytics/insights/{project_id}`** - AI-powered insights

@@ -1,0 +1,47 @@
+meta {
+  name: Get Test Cases by Requirement
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/api/requirements/SEM-11/test-cases
+  body: none
+  auth: none
+}
+
+tests {
+  test("Status is 200 or 404", function() {
+    expect([200, 404]).to.include(res.getStatus());
+  });
+  
+  test("Response structure is correct", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getBody()).to.have.property('success', true);
+      expect(res.getBody()).to.have.property('data');
+      expect(res.getBody()).to.have.property('count');
+      expect(res.getBody().data).to.have.property('requirement_key', 'SEM-11');
+      expect(res.getBody().data).to.have.property('test_cases');
+      expect(res.getBody().data).to.have.property('total_found');
+      expect(Array.isArray(res.getBody().data.test_cases)).toBe(true);
+    }
+  });
+  
+  test("Project ID is extracted correctly", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getBody().data).to.have.property('project_id', 'SEM');
+    }
+  });
+  
+  test("Test cases have required fields", function() {
+    if (res.getStatus() === 200 && res.getBody().data.test_cases.length > 0) {
+      const testCase = res.getBody().data.test_cases[0];
+      expect(testCase).to.have.property('id');
+      expect(testCase).to.have.property('title');
+      expect(testCase).to.have.property('status');
+      expect(testCase).to.have.property('requirement_key', 'SEM-11');
+      expect(testCase).to.have.property('linked_issues');
+      expect(Array.isArray(testCase.linked_issues)).toBe(true);
+    }
+  });
+}
