@@ -1739,16 +1739,91 @@ async def get_jira_issue_id(issue_key: str) -> str | None:
     return jira_issue.get("id")
 
 
+async def get_linked_test_case_keys(requirement_key: str) -> List[str]:
+    """
+    Get test case keys directly linked to a JIRA requirement using Zephyr's issuelinks endpoint.
+    
+    Args:
+        requirement_key (str): JIRA requirement key (e.g., "SEM-14")
+        
+    Returns:
+        List[str]: List of linked test case keys (e.g., ["SEM-T29", "SEM-T30"])
+    """
+    url = f"{ZEPHYR_BASE_URL}/issuelinks/{requirement_key}/testcases"
+    response = await request_zephyr(url)
+    
+    if response and isinstance(response, list):
+        # Extract test case keys from the response
+        linked_keys = []
+        for item in response:
+            key = item.get('key')
+            if key and isinstance(key, str):
+                linked_keys.append(key)
+        return linked_keys
+    
+    return []
+
+
+async def fetch_test_steps(test_case_key: str) -> List[Dict[str, Any]]:
+    """
+    Fetch test steps for a specific test case.
+    
+    Args:
+        test_case_key (str): Test case key (e.g., "SEM-T29")
+        
+    Returns:
+        List[Dict[str, Any]]: Formatted test steps with decoded HTML entities
+    """
+    import html
+    
+    url = f"{ZEPHYR_BASE_URL}/testcases/{test_case_key}/teststeps?maxResults=1000"
+    response = await request_zephyr(url)
+    
+    if not response or not isinstance(response, dict):
+        return []
+    
+    steps_data = response.get('values', [])
+    if not steps_data:
+        return []
+    
+    # Format test steps according to our response structure
+    # Based on the debug output, we know the data is in the 'inline' object
+    formatted_steps = []
+    for i, step in enumerate(steps_data):
+        inline_data = step.get('inline', {})
+        
+        # Extract the step data from the inline object
+        description = inline_data.get('description', '')
+        test_data = inline_data.get('testData', '')
+        expected_result = inline_data.get('expectedResult', '')
+        
+        # Decode HTML entities (e.g., &Ouml; -> Ö, &Uuml; -> Ü, &auml; -> ä)
+        def decode_html_entities(text: str) -> str:
+            if text:
+                return html.unescape(str(text)).strip()
+            return ''
+        
+        formatted_step = {
+            "step_number": i + 1,
+            "description": decode_html_entities(description),
+            "test_data": decode_html_entities(test_data),
+            "expected_result": decode_html_entities(expected_result)
+        }
+        formatted_steps.append(formatted_step)
+    
+    return formatted_steps
+
+
 @mcp.tool()
 async def get_test_cases_by_requirement(requirement_key: str) -> Dict[str, Any]:
     """
     Get all test cases linked to a specific JIRA requirement.
 
-    WORKFLOW: This tool finds test coverage for a requirement:
+    WORKFLOW: This tool finds test coverage for a requirement (OPTIMIZED):
     1. Extracts project ID from requirement key (e.g., SEM-11 → SEM)
-    2. Fetches all test cases for the project
-    3. Checks links for each test case to find ones linked to the requirement
-    4. Returns filtered test cases with link information
+    2. Uses direct Zephyr API to get linked test case keys (1 API call)
+    3. Fetches details and test steps for only the linked test cases (N calls vs 50+)
+    4. Returns complete test cases with populated test_steps arrays
     
     TYPICAL AI AGENT WORKFLOW:
     Use Case 1 - Coverage Analysis:
@@ -1789,156 +1864,135 @@ async def get_test_cases_by_requirement(requirement_key: str) -> Dict[str, Any]:
             "success": False
         }
     
-    # Get the numeric ID for the JIRA issue (needed for link comparison)
-    jira_issue_id = await get_jira_issue_id(requirement_key)
-    if not jira_issue_id:
-        return {
-            "error": f"JIRA requirement {requirement_key} not found or inaccessible",
-            "success": False
-        }
-    
-    # Get all test cases for the project using our existing processed data
     try:
-        # Call fetch_test_cases directly to get properly processed test case data
-        test_cases_response = await fetch_test_cases(project_id)
+        # NEW OPTIMIZED APPROACH: Use direct Zephyr endpoint to get linked test case keys
+        linked_test_case_keys = await get_linked_test_case_keys(requirement_key)
         
-        if not test_cases_response or 'items' not in test_cases_response:
-            return {
-                "error": f"Failed to fetch test cases for project {project_id}",
-                "success": False
-            }
-        
-        test_cases = test_cases_response.get('items', [])
-        linked_test_cases = []
-        
-        # Due to API limitations with the links endpoint (405 Method Not Allowed),
-        # we'll implement a fallback approach that checks test case data directly
-        # and provides useful information even when links can't be verified
-        
-        links_api_available = True
-        
-        # Check first few test cases to see if links API is working
-        for i, test_case in enumerate(test_cases[:3]):  # Test first 3 cases
-            test_case_key = test_case.get('id', '')  # Use 'id' from processed data
-            if not test_case_key:
-                continue
-                
-            links_url = f"{ZEPHYR_BASE_URL}/testcases/{test_case_key}/links/issues"
-            links_response = await request_zephyr(links_url)
-            
-            if links_response is None:
-                links_api_available = False
-                break
-        
-        # If links API is not available, use knowledge-based fallback for known requirements
-        if not links_api_available:
-            # Known test case mappings based on existing project knowledge
-            # This is a workaround for the Zephyr API limitation (405 Method Not Allowed)
-            known_mappings = {
-                "SEM-11": ["SEM-T29", "SEM-T30", "SEM-T31", "SEM-T32", "SEM-T33"]
-            }
-            
-            # Check if we have known mappings for this requirement
-            if requirement_key in known_mappings:
-                expected_test_cases = known_mappings[requirement_key]
-                
-                # Find the actual test case objects for the expected keys
-                for test_case in test_cases:
-                    test_case_key = test_case.get('id', '')  # Use 'id' field from processed data
-                    if test_case_key in expected_test_cases:
-                        # Use the already processed and clean test case data
-                        enhanced_test_case = {
-                            "id": test_case_key,
-                            "title": test_case.get('title', ''),
-                            "description": test_case.get('description'),  # This should already be properly mapped
-                            "status": test_case.get('status', 'UNKNOWN'),  # Already processed as string
-                            "priority": test_case.get('priority', 'UNKNOWN'),  # Already processed as string
-                            "created_date": test_case.get('created_date', ''),
-                            "updated_date": test_case.get('updated_date', ''),
-                            "source_url": test_case.get('source_url', f"https://api.zephyrscale.smartbear.com/testcase/{test_case_key}"),
-                            "test_type": test_case.get('test_type', 'MANUAL'),
-                            "automation_status": test_case.get('automation_status', 'NOT_AUTOMATED'),
-                            "requirement_key": requirement_key,
-                            "linked_issues": [requirement_key],
-                            "link_type": "tests",
-                            "api_limitation_note": "Links verified through alternative method due to API restrictions"
-                        }
-                        linked_test_cases.append(enhanced_test_case)
-                
-                response = create_response("test_cases_by_requirement", project_id, linked_test_cases)
-                response["metadata"]["additional_info"] = {
-                    "requirement_key": requirement_key,
-                    "project_id": project_id,
-                    "total_found": len(linked_test_cases),
-                    "search_scope": f"Known mappings for {requirement_key}",
-                    "total_test_cases_in_project": len(test_cases),
-                    "api_status": "Links API not available - using known mappings",
-                    "data_source": "Knowledge-based fallback (links verified through link_test_case_to_requirement)",
-                    "expected_test_cases": expected_test_cases,
-                    "found_test_cases": [tc["id"] for tc in linked_test_cases]
-                }
-                return response
-            
-            # For unknown requirements, return empty result with helpful info
+        if not linked_test_case_keys:
+            # No linked test cases found
             response = create_response("test_cases_by_requirement", project_id, [])
             response["metadata"]["additional_info"] = {
                 "requirement_key": requirement_key,
+                "project_id": project_id,
                 "total_found": 0,
-                "search_scope": f"All test cases in project {project_id}",
-                "total_test_cases_in_project": len(test_cases),
-                "api_status": "Links API not available (405 Method Not Allowed)",
-                "recommendation": "Use link_test_case_to_requirement tool to create links, then add to known_mappings",
-                "alternative": "Check test case details manually or use get_test_case_links for individual cases"
+                "approach_used": "issuelinks_endpoint",
+                "api_calls_made": 1,
+                "performance_note": "Direct lookup using /issuelinks/{issueKey}/testcases",
+                "recommendation": "No test cases linked to this requirement. Use create_test_case() and link_test_case_to_requirement() to establish links."
             }
             return response
         
-        # If links API is available, proceed with full search
-        for test_case in test_cases:
-            test_case_key = test_case.get('key', '')
-            if not test_case_key:
-                continue
-                
-            # Get links for this test case
-            links_url = f"{ZEPHYR_BASE_URL}/testcases/{test_case_key}/links/issues"
-            links_response = await request_zephyr(links_url)
-            
-            if links_response and 'values' in links_response:
-                # Check if any link matches our requirement
-                for link in links_response['values']:
-                    if str(link.get('issueId')) == str(jira_issue_id):
-                        # This test case is linked to our requirement
-                        created_date = test_case.get('createdOn', datetime.now().isoformat() + "Z")
-                        updated_date = test_case.get('updatedOn', created_date)
-                        
-                        linked_test_case = {
-                            "id": test_case_key,
-                            "title": test_case.get('name', ''),
-                            "description": test_case.get('objective', ''),
-                            "status": map_test_case_status(test_case.get('status', {}).get('name', 'Unknown')),
-                            "priority": test_case.get('priority', {}).get('name', 'Medium').upper(),
-                            "created_date": created_date,
-                            "updated_date": updated_date,
-                            "source_url": f"{ZEPHYR_BASE_URL.replace('/v2', '')}/testcase/{test_case_key}",
-                            "tags": test_case.get("labels", []),
-                            "custom_fields": test_case.get("customFields", {}),
-                            "test_type": "MANUAL",
-                            "automation_status": "NOT_AUTOMATED",
-                            "requirement_key": requirement_key,
-                            "environment": "TESTING",
-                            "component": test_case.get("component", {}).get("name") if test_case.get("component") else None,
-                            "linked_issues": [{"key": requirement_key, "id": jira_issue_id, "type": "covers"}]
-                        }
-                        linked_test_cases.append(linked_test_case)
-                        break  # Found the link, no need to check other links for this test case
+        # Get detailed information for each linked test case
+        linked_test_cases = []
+        total_api_calls = 1  # Count the initial issuelinks call
         
+        for test_case_key in linked_test_case_keys:
+            # Get test case details
+            detail_url = f"{ZEPHYR_BASE_URL}/testcases/{test_case_key}"
+            test_case_detail = await request_zephyr(detail_url)
+            total_api_calls += 1
+            
+            if not test_case_detail:
+                # Skip if we can't get details for this test case
+                continue
+            
+            # Get test steps for this test case
+            test_steps = await fetch_test_steps(test_case_key)
+            total_api_calls += 1
+            
+            # Create a stringified version of test steps for automation use
+            def create_test_steps_string(steps: List[Dict[str, Any]]) -> str:
+                if not steps:
+                    return "No test steps available."
+                
+                step_strings = []
+                for step in steps:
+                    step_num = step.get('step_number', 0)
+                    description = step.get('description', '').strip()
+                    test_data = step.get('test_data', '').strip()
+                    expected_result = step.get('expected_result', '').strip()
+                    
+                    step_string = f"Step {step_num}: {description}"
+                    if test_data:
+                        step_string += f"\n  Test Data: {test_data}"
+                    if expected_result:
+                        step_string += f"\n  Expected Result: {expected_result}"
+                    
+                    step_strings.append(step_string)
+                
+                return "\n\n".join(step_strings)
+            
+            test_steps_string = create_test_steps_string(test_steps)
+            
+            # Map the raw Zephyr response to our standard format (similar to fetch_test_cases)
+            created_date = test_case_detail.get("createdOn", datetime.now().isoformat() + "Z")
+            updated_date = test_case_detail.get("updatedOn", created_date)
+            
+            # Map status ID to status name
+            status_id = test_case_detail.get("status", {}).get("id")
+            status_mapping = {
+                9156759: "ACTIVE",
+                9156758: "DRAFT", 
+                9156757: "INACTIVE",
+            }
+            mapped_status = status_mapping.get(status_id, "DRAFT")
+            
+            # Map priority ID to priority name
+            priority_id = test_case_detail.get("priority", {}).get("id")
+            priority_mapping = {
+                9156760: "MEDIUM",
+                9156761: "HIGH",
+                9156762: "CRITICAL",
+                9156763: "LOW",
+            }
+            mapped_priority = priority_mapping.get(priority_id, "MEDIUM")
+            
+            # Extract component
+            component_name = (
+                test_case_detail.get("component", {}).get("name")
+                if test_case_detail.get("component")
+                else None
+            )
+            
+            enhanced_test_case = {
+                "id": test_case_key,
+                "title": test_case_detail.get("name", ""),
+                "description": test_case_detail.get("objective", ""),
+                "status": mapped_status,
+                "priority": mapped_priority,
+                "created_date": created_date,
+                "updated_date": updated_date,
+                "source_url": f"{ZEPHYR_BASE_URL.replace('/v2', '')}/testcase/{test_case_key}",
+                "tags": test_case_detail.get("labels", []),
+                "custom_fields": test_case_detail.get("customFields", {}),
+                "test_type": "MANUAL",
+                "automation_status": "NOT_AUTOMATED",
+                "requirement_key": requirement_key,
+                "linked_issues": [requirement_key],
+                "link_type": "tests",
+                "environment": "TESTING",
+                "component": component_name,
+                "test_steps": test_steps,  # Structured test steps array
+                "test_steps_string": test_steps_string,  # NEW: Stringified version for automation use
+                "link_source": "issuelinks_endpoint"
+            }
+            
+            linked_test_cases.append(enhanced_test_case)
+        
+        # Create response 
         response = create_response("test_cases_by_requirement", project_id, linked_test_cases)
-        # Add additional info to metadata
+        
+        # Add performance and transparency metadata
         response["metadata"]["additional_info"] = {
             "requirement_key": requirement_key,
+            "project_id": project_id,
             "total_found": len(linked_test_cases),
-            "search_scope": f"All test cases in project {project_id}",
-            "total_test_cases_checked": len(test_cases),
-            "api_status": "Links API available" if links_api_available else "Links API not available"
+            "approach_used": "issuelinks_endpoint",
+            "api_calls_made": total_api_calls,
+            "performance_improvement": f"Direct lookup vs brute force search (was 50+ calls, now {total_api_calls} calls)",
+            "linked_test_case_keys": linked_test_case_keys,
+            "test_steps_included": True,
+            "transparent_operation": "Direct API calls to /issuelinks/{issueKey}/testcases and /testcases/{key}/teststeps"
         }
         return response
         
